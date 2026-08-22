@@ -1,0 +1,23 @@
+{
+  "name": "housing-market-dashboard",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Backend-free React SPA that pulls US housing, construction, labor and credit data directly from public APIs in the browser and scores price-decline risk.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "proxy": "node scripts/dev-proxy.mjs"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.13.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "playwright": "^1.62.1",
+    "vite": "^5.4.11"
+  }
+}
