@@ -22,6 +22,9 @@ import react from '@vitejs/plugin-react';
  */
 export default defineConfig({
   plugins: [react()],
+  // GitHub Pages serves a project site from /<repo>/, not /. The Pages workflow
+  // sets VITE_BASE=/Housing/; local dev and root deploys keep '/'.
+  base: process.env.VITE_BASE || '/',
   server: {
     port: 5173,
     open: true,
@@ -55,6 +58,25 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
-    chunkSizeWarningLimit: 900,
+    // The charts chunk is ~530KB raw / ~150KB gzipped and that is simply how big
+    // recharts + d3 are. Raising the threshold documents that as expected rather
+    // than leaving a permanent warning everyone learns to ignore.
+    chunkSizeWarningLimit: 700,
+    rollupOptions: {
+      output: {
+        // Recharts + D3 are most of the bundle and change far less often than
+        // app code. Splitting them means editing a panel invalidates ~40KB of
+        // cache instead of ~180KB.
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          // Recharts pulls in a large slice of d3. It is the bulk of the bundle
+          // and changes only when the dependency is upgraded, so it gets its own
+          // long-lived chunk; editing a panel then invalidates ~32KB of cache
+          // rather than ~185KB.
+          if (/[\\/]node_modules[\\/](recharts|d3-|victory-|decimal\.js)/.test(id)) return 'charts';
+          return 'vendor';
+        },
+      },
+    },
   },
 });

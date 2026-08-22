@@ -184,6 +184,61 @@ await page.getByRole('tab', { name: 'Inventory & demand' }).click();
 await page.waitForTimeout(800);
 await page.screenshot({ path: 'smoke-supply.png', fullPage: false });
 
+// ---------------------------------------------------------------------------
+// Demo mode: a second page with NO routes intercepted and NO keys set. If any
+// request escapes, or any panel needs one, this fails -- which is exactly the
+// guarantee demo mode is supposed to give (works offline, keyless, in a static
+// deploy).
+// ---------------------------------------------------------------------------
+const demoPage = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+const demoErrors = [];
+const escaped = [];
+demoPage.on('console', (m) => { if (m.type() === 'error') demoErrors.push(m.text()); });
+demoPage.on('pageerror', (e) => demoErrors.push(e.message));
+// Any request to a non-local host is a leak.
+demoPage.on('request', (r) => {
+  const u = new URL(r.url());
+  if (!['127.0.0.1', 'localhost'].includes(u.hostname)) escaped.push(r.url());
+});
+await demoPage.addInitScript(() => {
+  localStorage.clear();
+  localStorage.setItem('hmd:demo', 'true');
+});
+await demoPage.goto(base, { waitUntil: 'networkidle' });
+await demoPage.waitForTimeout(2000);
+
+const demoScore = parseInt(await demoPage.locator('.gauge-value').first().innerText(), 10);
+check('demo mode renders a score with no keys and no network', Number.isFinite(demoScore), String(demoScore));
+check('demo mode makes zero external requests', escaped.length === 0, escaped.slice(0, 3).join(', '));
+check('demo mode shows the synthetic-data banner', (await demoPage.locator('.demo-banner').count()) > 0);
+check('demo mode stamps the gauge', (await demoPage.locator('.demo-stamp').count()) > 0);
+// Regression guard: the gauge's filled arc must use large-arc-flag 0 at every
+// score. Setting that flag from the value rather than the swept angle made any
+// score above 50 render the complement of the arc -- a bug no "does it have a
+// number" assertion catches. Demo mode scores above 50, so this exercises it.
+const arcPaths = await demoPage.locator('.gauge-figure svg path').evaluateAll((els) =>
+  els.map((e) => e.getAttribute('d'))
+);
+const arcFlagsOk = arcPaths.every((d) => {
+  const m = /A\s[\d.]+\s[\d.]+\s0\s(\d)\s(\d)/.exec(d || '');
+  return !m || m[1] === '0';
+});
+check('gauge arcs use the correct large-arc-flag at every score', arcFlagsOk, arcPaths.join(' | ').slice(0, 160));
+check('gauge draws both a track and a value arc', arcPaths.length >= 2, `${arcPaths.length} paths`);
+
+const demoCoverage = await demoPage.locator('.coverage').first().innerText();
+check('demo mode resolves every indicator', /100%/.test(demoCoverage), demoCoverage.replace(/\s+/g, ' '));
+for (const label of ['Inventory & demand', 'Construction & permits', 'Employment', 'Credit & confidence']) {
+  await demoPage.getByRole('tab', { name: label }).click();
+  await demoPage.waitForTimeout(500);
+  check(`demo tab "${label}" renders charts`, (await demoPage.locator('.recharts-surface').count()) > 0);
+}
+await demoPage.getByRole('tab', { name: 'Overview' }).click();
+await demoPage.waitForTimeout(700);
+await demoPage.screenshot({ path: 'smoke-demo.png', fullPage: false });
+check('no errors in demo mode', demoErrors.filter((e) => !/favicon|DevTools/i.test(e)).length === 0, demoErrors.join(' | ').slice(0, 300));
+await demoPage.close();
+
 const ignorable = /favicon|Download the React DevTools/i;
 const realConsole = consoleErrors.filter((e) => !ignorable.test(e));
 check('no page exceptions', pageErrors.length === 0, pageErrors.join(' | ').slice(0, 400));

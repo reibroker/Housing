@@ -18,10 +18,12 @@ import { loadBls } from '../data/bls.js';
 import { loadFred } from '../data/fred.js';
 import { loadRedfin, loadRedfinFromFile } from '../data/redfin.js';
 import { computeRiskScore, historicalScore } from '../model/riskModel.js';
+import { generateDemoData } from '../data/demo.js';
+import { getConfig } from '../config/env.js';
 
 const emptySource = () => ({ data: null, meta: null, error: null, loading: false });
 
-export default function useDashboardData({ stateFips = null, stateCode = null } = {}) {
+export default function useDashboardData({ stateFips = null, stateCode = null, demo = false } = {}) {
   const [census, setCensus] = useState(emptySource);
   const [bls, setBls] = useState(emptySource);
   const [fred, setFred] = useState(emptySource);
@@ -57,6 +59,19 @@ export default function useDashboardData({ stateFips = null, stateCode = null } 
 
   const loadAll = useCallback(async () => {
     const gen = ++generation.current;
+
+    // Demo mode short-circuits every network call. Nothing is fetched, so the
+    // whole UI works with no key, no CORS and no connectivity -- see
+    // src/data/demo.js for why this exists and what the numbers are (and
+    // are not).
+    if (demo) {
+      const d = generateDemoData(getConfig().historyYears);
+      setCensus({ data: d.census, meta: { ...d.meta, ...d.censusMeta, resolution: {}, rawSeries: {} }, error: null, loading: false });
+      setBls({ data: d.bls, meta: d.meta, error: null, loading: false });
+      setFred({ data: d.fred, meta: { ...d.meta, ...d.fredMeta }, errors: {}, error: null, loading: false });
+      setRedfin({ data: d.redfin, meta: d.meta, error: null, loading: false });
+      return;
+    }
 
     setCensus((s) => ({ ...s, loading: true, error: null }));
     setBls((s) => ({ ...s, loading: true, error: null }));
@@ -94,7 +109,7 @@ export default function useDashboardData({ stateFips = null, stateCode = null } 
       });
 
     loadRedfinSource(gen);
-  }, [stateFips, loadRedfinSource]);
+  }, [stateFips, loadRedfinSource, demo]);
 
   /** Accept a Redfin file the user dropped in, bypassing the network entirely. */
   const ingestRedfinFile = useCallback(
@@ -122,13 +137,14 @@ export default function useDashboardData({ stateFips = null, stateCode = null } 
   useEffect(() => {
     loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stateFips, stateCode]);
+  }, [stateFips, stateCode, demo]);
 
   const bundle = { census: census.data, bls: bls.data, fred: fred.data, redfin: redfin.data };
   const risk = computeRiskScore(bundle);
   const riskHistory = historicalScore(bundle);
 
   return {
+    demo,
     census,
     bls,
     fred,

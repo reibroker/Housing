@@ -44,12 +44,19 @@ function StatusRow({ name, host, cors, keyNeeded, state, note }) {
   );
 }
 
-export default function DataSourcesPanel({ census, bls, fred, redfin }) {
+export default function DataSourcesPanel({ census, bls, fred, redfin, demo = false }) {
   const resolution = census.meta?.resolution || {};
   const raw = census.meta?.rawSeries || {};
 
   return (
     <div className="stack">
+      {demo && (
+        <div className="notice demo-banner">
+          <strong>Demo mode is on &mdash; nothing below is being fetched</strong>
+          Source status, code resolution and quota counts are only meaningful against live APIs. Switch the Data
+          selector in the filter row back to &ldquo;Live APIs&rdquo; to exercise them.
+        </div>
+      )}
       <section className="card">
         <div className="card-head"><h3>Sources</h3></div>
         <p className="card-sub">
@@ -96,6 +103,7 @@ export default function DataSourcesPanel({ census, bls, fred, redfin }) {
         </div>
       </section>
 
+      {!demo && (
       <section className="card">
         <div className="card-head"><h3>Census series resolution</h3></div>
         <p className="card-sub">
@@ -162,6 +170,7 @@ export default function DataSourcesPanel({ census, bls, fred, redfin }) {
           </details>
         )}
       </section>
+      )}
 
       <section className="card">
         <div className="card-head"><h3>Series reference</h3></div>

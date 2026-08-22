@@ -29,11 +29,16 @@ function polar(cx, cy, r, value) {
 function arcPath(cx, cy, r, from, to) {
   const a = polar(cx, cy, r, from);
   const b = polar(cx, cy, r, to);
-  const large = Math.abs(to - from) > 50 ? 1 : 0;
-  return `M ${a.x.toFixed(2)} ${a.y.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${b.x.toFixed(2)} ${b.y.toFixed(2)}`;
+  // The gauge spans exactly 180 degrees end to end, so no segment of it can ever
+  // exceed a half-circle and the SVG large-arc-flag is always 0. (Setting it
+  // from the *value* rather than the swept angle is the trap here: it makes any
+  // score above 50 draw the complement of the arc instead of the arc.)
+  const largeArcFlag = 0;
+  const sweepFlag = 1; // clockwise, left to right
+  return `M ${a.x.toFixed(2)} ${a.y.toFixed(2)} A ${r} ${r} 0 ${largeArcFlag} ${sweepFlag} ${b.x.toFixed(2)} ${b.y.toFixed(2)}`;
 }
 
-export default function RiskGauge({ score, band, coverage, available, total }) {
+export default function RiskGauge({ score, band, coverage, available, total, demo = false }) {
   const W = 340;
   const H = 196;
   const cx = W / 2;
@@ -102,6 +107,9 @@ export default function RiskGauge({ score, band, coverage, available, total }) {
         {hasScore ? Math.round(score) : '--'}
         <span className="gauge-scale"> / 100</span>
       </div>
+
+      {/* Demo scores must never be screenshot-able as if they were real. */}
+      {demo && <div className="demo-stamp">Demo &mdash; synthetic data</div>}
 
       {band && (
         <div className="gauge-band">

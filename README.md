@@ -39,6 +39,18 @@ npm run preview      # serve the production build locally
 node scripts/smoke-test.mjs   # headless end-to-end test with mocked upstreams
 ```
 
+### Try it with no key at all
+
+Set the **Data** selector in the filter row to **Demo (synthetic)**. The whole dashboard —
+every chart, the gauge, the breakdown, the table views — runs from locally generated data
+with zero network requests and zero credentials. Useful for a first look, for working on the
+UI offline, and for a public static deploy.
+
+Those numbers are **invented**. They are shaped to resemble a market that cools over several
+years so the gauge has something to do, but they are not published statistics. Demo mode shows
+a persistent banner and stamps the gauge so a screenshot can never be mistaken for real data.
+The smoke test asserts that demo mode makes no external requests at all.
+
 **Requirements:** Node 18+ and a browser with `DecompressionStream` (Chrome/Edge 80+,
 Firefox 113+, Safari 16.4+) — that is what gunzips the Redfin file in-page.
 
@@ -190,6 +202,7 @@ src/
 │   ├── bls.js            v1/v2 with the preflight-free request ladder
 │   ├── fred.js           Keyless CSV endpoint (or JSON API)
 │   └── redfin.js         Streamed S3 fetch + file-drop fallback
+├── data/demo.js          Deterministic synthetic bundle for offline/keyless use
 ├── model/riskModel.js    Indicator definitions, weights, thresholds, scoring
 ├── hooks/useDashboardData.js
 └── components/           Charts, gauge, breakdown, settings, diagnostics
@@ -252,12 +265,23 @@ to each panel:
 npm run build && node scripts/smoke-test.mjs
 ```
 
-Loads the built app in headless Chromium with all four upstream hosts intercepted and served
-synthetic-but-correctly-shaped payloads, then asserts: no console errors or page exceptions,
-each parser (Census JSON, BLS envelope, FRED CSV, gzipped TSV) produces charts, the gauge
-renders a numeric score at 100% coverage, all Census codes resolve, every tab mounts, and the
-table-view toggle works. This catches the class of bug `vite build` cannot — render-time
-Recharts props, parsers that silently yield zero rows, null dereferences in the model.
+26 checks in two passes.
+
+**Live pass** — the built app in headless Chromium with all four upstream hosts intercepted and
+served synthetic-but-correctly-shaped payloads. Asserts: no console errors or page exceptions,
+each parser (Census JSON, BLS envelope, FRED CSV, gzipped TSV) produces charts, the gauge renders
+a numeric score at 100% coverage, all Census codes resolve, every tab mounts, the table-view
+toggle works.
+
+**Demo pass** — a second page with *nothing* intercepted and no keys set. Asserts that the app
+still renders a full dashboard, that it issues **zero** requests to any non-local host, that the
+synthetic-data banner and gauge stamp are present, and that the gauge's SVG arcs use the correct
+`large-arc-flag` at scores above 50 (a real bug this caught: deriving that flag from the score
+rather than the swept angle made every reading over 50 draw the complement of the arc).
+
+This is the class of bug `vite build` cannot catch — render-time Recharts props, parsers that
+silently yield zero rows, null dereferences in the model, and geometry that is wrong only in
+part of its range.
 
 ---
 
@@ -269,6 +293,27 @@ anywhere that serves files. Two caveats:
 1. The Vite dev proxy does **not** exist in production. Configure `VITE_CORS_PROXY`, or rely on
    the Redfin file-drop fallback.
 2. Don't bake keys into a public build — let visitors supply their own via Settings.
+
+### GitHub Pages (included)
+
+`.github/workflows/pages.yml` builds and publishes on every push to `main`. One-time setup:
+**repository Settings → Pages → Source: GitHub Actions**. After that the dashboard is reachable
+from any device — including a tablet — at `https://<user>.github.io/<repo>/`.
+
+The Pages build sets `VITE_DEFAULT_DEMO=true`, so the public page opens in demo mode rather
+than blank: a public build has no API key, and on a static host several upstreams are
+CORS-blocked anyway. Visitors who want live data paste their own Census key into Settings and
+flip the Data selector — their key stays in their browser and is never part of the build.
+
+`VITE_BASE` is set to `/<repo>/` by the workflow because project sites are not served from the
+domain root. Local dev and root deploys keep `/`.
+
+### CI
+
+`.github/workflows/ci.yml` runs `npm ci`, `npm run build` and the smoke test on every push and
+pull request, and uploads the screenshots as artifacts. It needs no secrets: the smoke test
+intercepts all four upstreams, so CI never touches a real API and cannot be broken by an outage
+or a spent rate limit.
 
 ---
 

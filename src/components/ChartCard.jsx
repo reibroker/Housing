@@ -22,6 +22,9 @@ function ageLabel(ms) {
 
 export function SourceBadge({ meta }) {
   if (!meta) return null;
+  if (meta.synthetic || meta.via === 'demo') {
+    return <span className="badge warn" title="Synthetic data — nothing was fetched">demo</span>;
+  }
   if (meta.stale) {
     return <span className="badge warn" title={meta.error?.message || ''}>stale cache &middot; {ageLabel(meta.ageMs)}</span>;
   }

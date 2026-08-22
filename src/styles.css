@@ -262,3 +262,24 @@ summary:hover { color: var(--text-primary); }
 .recharts-cartesian-axis-line, .recharts-cartesian-axis-tick-line { stroke: var(--axis); }
 .recharts-text { fill: var(--text-muted); font-size: 11px; }
 .recharts-surface { overflow: visible; }
+
+/* --------------------------------------------------------- demo mode ------ */
+/* Demo data must be unmistakable. A quiet footnote is not enough -- someone
+   will screenshot the gauge. Hence a persistent banner plus a stamp on the
+   figure itself. */
+.notice.demo-banner {
+  border-left-color: var(--serious);
+  background: color-mix(in srgb, var(--serious) 10%, var(--surface-1));
+}
+.demo-stamp {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--critical);
+  border: 1px solid color-mix(in srgb, var(--critical) 45%, transparent);
+  border-radius: 999px;
+  padding: 2px 10px;
+}

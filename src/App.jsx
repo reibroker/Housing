@@ -45,6 +45,26 @@ function yoySeries(series, periods = 12) {
   });
 }
 
+/** Demo-mode toggle, persisted so a reload on a tablet does not lose it. The
+ *  persistent banner is what keeps the setting from being forgotten. */
+function useDemoMode() {
+  const [demo, setDemo] = useState(() => {
+    try {
+      const stored = localStorage.getItem('hmd:demo');
+      if (stored !== null) return stored === 'true';
+    } catch { /* storage blocked */ }
+    // VITE_DEFAULT_DEMO lets a keyless deploy (e.g. GitHub Pages) open in demo
+    // mode so the page is not blank on arrival. An explicit user choice always
+    // wins over it.
+    return String(import.meta.env.VITE_DEFAULT_DEMO) === 'true';
+  });
+  const apply = (v) => {
+    setDemo(v);
+    try { localStorage.setItem('hmd:demo', String(v)); } catch { /* non-persistent */ }
+  };
+  return [demo, apply];
+}
+
 function useTheme() {
   const [theme, setTheme] = useState(() => {
     try { return localStorage.getItem('hmd:theme') || 'system'; } catch { return 'system'; }
@@ -62,6 +82,7 @@ export default function App() {
   const [tab, setTab] = useState('overview');
   const [stateFips, setStateFips] = useState('');
   const [theme, setTheme] = useTheme();
+  const [demo, setDemo] = useDemoMode();
   const cfg = getConfig();
 
   const selectedState = STATES.find((s) => s.fips === stateFips) || null;
@@ -72,6 +93,7 @@ export default function App() {
   } = useDashboardData({
     stateFips: selectedState?.fips || null,
     stateCode: selectedState?.code || null,
+    demo,
   });
 
   const scope = selectedState ? selectedState.name : 'United States';
@@ -102,7 +124,15 @@ export default function App() {
         </div>
       </header>
 
-      {!cfg.censusKey && (
+      {demo && (
+        <div className="notice demo-banner" role="status">
+          <strong>Demo mode &mdash; every number on this page is synthetic</strong>
+          Nothing is being fetched. These series are generated locally to exercise the interface, and they are
+          <em> not </em> published statistics. Turn demo mode off in the filter row to load real data.
+        </div>
+      )}
+
+      {!cfg.censusKey && !demo && (
         <div className="notice error">
           <strong>A Census API key is required</strong>
           Census rejects unkeyed requests, so the permits, housing starts and new-home panels will stay empty until you
@@ -122,11 +152,20 @@ export default function App() {
             ))}
           </select>
         </div>
+        <div className="field">
+          <label htmlFor="demo">Data</label>
+          <select id="demo" value={demo ? 'demo' : 'live'} onChange={(e) => setDemo(e.target.value === 'demo')}>
+            <option value="live">Live APIs</option>
+            <option value="demo">Demo (synthetic)</option>
+          </select>
+        </div>
         <div className="spacer" />
         <div className="small muted" style={{ maxWidth: '46ch', textAlign: 'right' }}>
-          {selectedState
-            ? `Resale and unemployment panels show ${selectedState.name}. Construction, permits, credit and confidence are published nationally only.`
-            : 'Showing national data. Pick a state to scope the resale and unemployment panels.'}
+          {demo
+            ? 'Demo mode ignores the geography selection — the synthetic series are the same for every region.'
+            : selectedState
+              ? `Resale and unemployment panels show ${selectedState.name}. Construction, permits, credit and confidence are published nationally only.`
+              : 'Showing national data. Pick a state to scope the resale and unemployment panels.'}
         </div>
       </div>
 
@@ -146,12 +185,13 @@ export default function App() {
                 score={risk.score}
                 band={risk.band}
                 coverage={risk.coverage}
+                demo={demo}
                 available={risk.available}
                 total={risk.total}
               />
               <div>
                 <h2 style={{ margin: '0 0 6px', fontSize: '1.125rem' }}>
-                  Price-decline pressure &mdash; {scope}
+                  Price-decline pressure &mdash; {demo ? 'synthetic demo data' : scope}
                 </h2>
                 <p className="gauge-blurb">
                   {risk.band
@@ -239,7 +279,7 @@ export default function App() {
 
       {tab === 'supply' && (
         <div className="stack">
-          {(redfin.error || !redfin.data) && (
+          {!demo && (redfin.error || !redfin.data) && (
             <section className="card full">
               <div className="card-head"><h3>Redfin market data</h3></div>
               <RedfinFallback
@@ -651,7 +691,7 @@ export default function App() {
         </div>
       )}
 
-      {tab === 'sources' && <DataSourcesPanel census={census} bls={bls} fred={fred} redfin={redfin} />}
+      {tab === "sources" && <DataSourcesPanel census={census} bls={bls} fred={fred} redfin={redfin} demo={demo} />}
       {tab === 'settings' && <SettingsPanel onApply={reload} />}
     </div>
   );
