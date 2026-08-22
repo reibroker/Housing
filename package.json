@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "proxy": "node scripts/dev-proxy.mjs"
+    "proxy": "node scripts/dev-proxy.mjs",
+    "build:single": "VITE_SINGLEFILE=true VITE_DEFAULT_DEMO=true vite build && node scripts/inline-single.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",

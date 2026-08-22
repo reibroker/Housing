@@ -308,6 +308,16 @@ flip the Data selector — their key stays in their browser and is never part of
 `VITE_BASE` is set to `/<repo>/` by the workflow because project sites are not served from the
 domain root. Local dev and root deploys keep `/`.
 
+### Single-file preview build
+
+```bash
+npm run build:single
+```
+
+Emits `housing-dashboard-demo.html` — the entire app, CSS and JS inlined, in one file that opens
+straight from disk with no server and no network. Forced into demo mode, since a file:// page can
+fetch nothing. Handy for sending someone a look at the UI without asking them to install anything.
+
 ### CI
 
 `.github/workflows/ci.yml` runs `npm ci`, `npm run build` and the smoke test on every push and

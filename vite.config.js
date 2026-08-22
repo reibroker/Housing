@@ -56,7 +56,11 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: 'dist',
+    outDir: process.env.VITE_SINGLEFILE === 'true' ? 'dist-single' : 'dist',
+    // Single-file mode collapses everything into one chunk so scripts/inline-single.mjs
+    // can fold the whole app into one self-contained HTML document (used for the
+    // hosted demo preview, where no separate asset requests are allowed).
+    cssCodeSplit: process.env.VITE_SINGLEFILE !== 'true',
     sourcemap: true,
     // The charts chunk is ~530KB raw / ~150KB gzipped and that is simply how big
     // recharts + d3 are. Raising the threshold documents that as expected rather
@@ -67,7 +71,8 @@ export default defineConfig({
         // Recharts + D3 are most of the bundle and change far less often than
         // app code. Splitting them means editing a panel invalidates ~40KB of
         // cache instead of ~180KB.
-        manualChunks(id) {
+        inlineDynamicImports: process.env.VITE_SINGLEFILE === 'true',
+        manualChunks: process.env.VITE_SINGLEFILE === 'true' ? undefined : (id) => {
           if (!id.includes('node_modules')) return undefined;
           // Recharts pulls in a large slice of d3. It is the bulk of the bundle
           // and changes only when the dependency is upgraded, so it gets its own
