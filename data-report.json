@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-23T20:29:27.262Z",
+  "generatedAt": "2026-08-23T20:35:26.105Z",
   "node": "v20.20.2",
   "sources": {
     "census": {
@@ -12,10 +12,107 @@
       "error": "CENSUS_API_KEY not set — Census rejects every unkeyed request."
     },
     "redfin": {
-      "ok": false,
+      "ok": true,
       "cors": null,
       "contentLength": "486979",
-      "error": "None of the requested columns were found. File header was: PERIOD_BEGIN, PERIOD_END, PERIOD_DURATION, REGION_TYPE, REGION_TYPE_ID, TABLE_ID, IS_SEASONALLY_ADJUSTED, REGION, CITY, STATE, STATE_CODE, PROPERTY_TYPE..."
+      "headerSample": [
+        "PERIOD_BEGIN",
+        "PERIOD_END",
+        "PERIOD_DURATION",
+        "REGION_TYPE",
+        "REGION_TYPE_ID",
+        "TABLE_ID",
+        "IS_SEASONALLY_ADJUSTED",
+        "REGION",
+        "CITY",
+        "STATE",
+        "STATE_CODE",
+        "PROPERTY_TYPE",
+        "PROPERTY_TYPE_ID",
+        "MEDIAN_SALE_PRICE",
+        "MEDIAN_SALE_PRICE_MOM",
+        "MEDIAN_SALE_PRICE_YOY",
+        "MEDIAN_LIST_PRICE",
+        "MEDIAN_LIST_PRICE_MOM",
+        "MEDIAN_LIST_PRICE_YOY",
+        "MEDIAN_PPSF",
+        "MEDIAN_PPSF_MOM",
+        "MEDIAN_PPSF_YOY",
+        "MEDIAN_LIST_PPSF",
+        "MEDIAN_LIST_PPSF_MOM",
+        "MEDIAN_LIST_PPSF_YOY",
+        "HOMES_SOLD",
+        "HOMES_SOLD_MOM",
+        "HOMES_SOLD_YOY",
+        "PENDING_SALES",
+        "PENDING_SALES_MOM"
+      ],
+      "totalRows": 1903,
+      "keptRows": 346,
+      "counts": {
+        "medianSalePrice": 173,
+        "medianSalePriceYoY": 173,
+        "homesSold": 173,
+        "homesSoldYoY": 173,
+        "newListings": 173,
+        "inventory": 173,
+        "inventoryYoY": 173,
+        "monthsOfSupply": 173,
+        "medianDaysOnMarket": 173,
+        "saleToListRatio": 173,
+        "soldAboveList": 173,
+        "priceDrops": 173
+      },
+      "samples": {
+        "medianSalePrice": {
+          "date": "2026-05-01",
+          "value": 440410.810237043
+        },
+        "medianSalePriceYoY": {
+          "date": "2026-05-01",
+          "value": 2.2954688389999998
+        },
+        "homesSold": {
+          "date": "2026-05-01",
+          "value": 432014.72441824
+        },
+        "homesSoldYoY": {
+          "date": "2026-05-01",
+          "value": 0.5739396192
+        },
+        "newListings": {
+          "date": "2026-05-01",
+          "value": 540196.67326278
+        },
+        "inventory": {
+          "date": "2026-05-01",
+          "value": 1397071.40811108
+        },
+        "inventoryYoY": {
+          "date": "2026-05-01",
+          "value": -9.141150772
+        },
+        "monthsOfSupply": {
+          "date": "2026-05-01",
+          "value": 3.362799658
+        },
+        "medianDaysOnMarket": {
+          "date": "2026-05-01",
+          "value": 50.022834756
+        },
+        "saleToListRatio": {
+          "date": "2026-05-01",
+          "value": 98.60065156
+        },
+        "soldAboveList": {
+          "date": "2026-05-01",
+          "value": 25.92082096
+        },
+        "priceDrops": {
+          "date": "2026-05-01",
+          "value": 19.956237169999998
+        }
+      }
     },
     "bls": {
       "ok": true,
@@ -72,7 +169,7 @@
           "n": 143,
           "last": {
             "date": "2026-06-01",
-            "value": 1351069.14
+            "value": 1351.0691399999998
           }
         },
         "creditCardDelinquency": {
