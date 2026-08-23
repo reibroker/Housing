@@ -101,7 +101,36 @@ months.forEach((t, i) => {
 const REDFIN_GZ = gzipSync(Buffer.from(redfinRows.join('\n'), 'utf8'));
 
 // ---------------------------------------------------------------- run
-const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+/**
+ * Locate a browser.
+ *
+ * On CI and on a normal dev machine, Playwright resolves its own bundled
+ * Chromium and `executablePath` must be left undefined. Some sandboxed
+ * environments instead ship a preinstalled Chromium at a fixed path and block
+ * the download, so we probe PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH and a couple of
+ * known locations first. Hardcoding a path here breaks CI; hardcoding nothing
+ * breaks the sandbox -- hence the probe.
+ */
+function findChromium() {
+  const candidates = [
+    process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
+    ...(process.env.PLAYWRIGHT_BROWSERS_PATH
+      ? ['chromium/chrome-linux/chrome', 'chromium-1194/chrome-linux/chrome'].map((p) =>
+          join(process.env.PLAYWRIGHT_BROWSERS_PATH, p)
+        )
+      : []),
+  ].filter(Boolean);
+  return candidates.find((p) => existsSync(p));
+}
+
+const executablePath = findChromium();
+if (executablePath) console.log(`Using preinstalled Chromium at ${executablePath}`);
+
+const browser = await chromium.launch({
+  ...(executablePath ? { executablePath } : {}),
+  // Required in most containers, harmless elsewhere.
+  args: ['--no-sandbox', '--disable-dev-shm-usage'],
+});
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
 
 const consoleErrors = [];

@@ -10,7 +10,10 @@ name: Deploy to GitHub Pages
 # the Data selector to "Live APIs" -- their key stays in their own browser and is
 # never part of this build.
 #
-# ONE-TIME SETUP: repository Settings -> Pages -> Source: "GitHub Actions".
+# No manual setup needed: the build job calls actions/configure-pages with
+# enablement, which switches Pages on using this workflow's own pages:write
+# grant. (If your org policy blocks that, set it by hand once at
+# Settings -> Pages -> Source: "GitHub Actions".)
 
 on:
   push:
@@ -32,6 +35,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # Turns Pages on for the repo if it is not already, using this workflow's
+      # own `pages: write` grant. Without it the deploy job fails on a fresh repo
+      # until someone flips Settings -> Pages -> Source by hand.
+      - name: Enable and configure Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - uses: actions/setup-node@v4
         with:
