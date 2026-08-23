@@ -151,7 +151,12 @@ export async function fetchBlsSeries(seriesIds) {
   const endYear = new Date().getFullYear();
   // Keyless requests are capped at 10 years of history by BLS itself.
   const span = hasKey ? Math.min(cfg.historyYears, 20) : Math.min(cfg.historyYears, 10);
-  const startYear = endYear - span;
+  // Inclusive year counting: startyear=2016&endyear=2026 is ELEVEN years and
+  // breaches the cap (10 keyless, 20 keyed). BLS responds by clipping the range
+  // and returning the OLDEST years, silently dropping the newest months -- the
+  // ones a current-conditions dashboard actually needs. Verified against the
+  // live API in CI: a 2016-2026 request came back ending 2025-12.
+  const startYear = endYear - (span - 1);
 
   const ids = [...new Set(seriesIds)];
   const cacheKey = `bls:${ids.join(',')}:${startYear}-${endYear}:${hasKey ? 'k' : 'nk'}`;

@@ -199,6 +199,10 @@ function blsPoints(s) {
 async function doBls() {
   const info = { ok: false, cors: null, keyed: Boolean(BLS_KEY) };
   const endYear = new Date().getFullYear();
+  // BLS counts years INCLUSIVELY: startyear=2016&endyear=2026 is eleven years,
+  // which exceeds the keyless ten-year cap. BLS then silently clips the range
+  // and returns 2016-2025 -- dropping the most recent months, which is exactly
+  // the data a current-conditions gauge depends on. Hence span - 1.
   const span = BLS_KEY ? Math.min(HISTORY_YEARS, 20) : Math.min(HISTORY_YEARS, 10);
   const base = BLS_KEY
     ? 'https://api.bls.gov/publicAPI/v2/timeseries/data/'
@@ -210,7 +214,7 @@ async function doBls() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           seriesid: Object.values(BLS_IDS),
-          startyear: String(endYear - span),
+          startyear: String(endYear - (span - 1)),
           endyear: String(endYear),
           ...(BLS_KEY ? { registrationkey: BLS_KEY } : {}),
         }),
