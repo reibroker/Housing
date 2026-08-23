@@ -349,8 +349,64 @@ async function doRedfin() {
   }
 }
 
+
+// -------------------------------------------------------------- calendar ----
+/**
+ * Economic release calendar.
+ *
+ * The goal is to know when each series the dashboard reads is next published,
+ * so the site can say "next housing starts: Sep 17" rather than leaving the user
+ * to guess why a number has not moved.
+ *
+ * SOURCING NOTE. Commercial calendars such as Econoday aggregate exactly this
+ * information, but their listings are licensed content — fine to consult, not
+ * ours to scrape and republish on a public site. The underlying release
+ * schedules are published by the statistical agencies themselves and are US
+ * Government works in the public domain, so we build the calendar from those
+ * directly. Same dates, no licensing problem.
+ *
+ * This function PROBES several candidate endpoints and records what each
+ * returned. The development sandbox cannot reach any of these hosts, so the
+ * report is how we find out which ones exist and what shape they are in before
+ * committing to a parser.
+ */
+const CALENDAR_CANDIDATES = [
+  { id: 'bls_ics',        url: 'https://www.bls.gov/schedule/news_release/bls.ics', as: 'text' },
+  { id: 'bls_schedule',   url: 'https://www.bls.gov/schedule/news_release/2026_sched.htm', as: 'text' },
+  { id: 'census_ics',     url: 'https://www.census.gov/economic-indicators/calendar.ics', as: 'text' },
+  { id: 'census_cal',     url: 'https://www.census.gov/economic-indicators/calendar-listview.html', as: 'text' },
+  { id: 'fred_releases',  url: 'https://api.stlouisfed.org/fred/releases/dates?file_type=json&include_release_dates_with_no_data=true&api_key=' + (process.env.FRED_API_KEY || 'NOKEY'), as: 'text' },
+];
+
+async function doCalendar() {
+  const info = { probes: {} };
+  for (const c of CALENDAR_CANDIDATES) {
+    try {
+      const { data, cors } = await get(c.url, { as: c.as, timeoutMs: 45_000 });
+      const text = String(data);
+      info.probes[c.id] = {
+        ok: true,
+        cors,
+        bytes: text.length,
+        contentSniff: text.slice(0, 200).replace(/\s+/g, ' '),
+        // For iCal, count events and show one so the parser can be written
+        // against reality rather than a guess.
+        vevents: (text.match(/BEGIN:VEVENT/g) || []).length,
+        sampleEvent: (() => {
+          const m = /BEGIN:VEVENT([\s\S]{0,600}?)END:VEVENT/.exec(text);
+          return m ? m[1].replace(/\s+/g, ' ').slice(0, 400) : null;
+        })(),
+      };
+    } catch (e) {
+      info.probes[c.id] = { ok: false, error: e.message.slice(0, 200) };
+    }
+  }
+  report.sources.calendar = info;
+  return null;
+}
+
 // ------------------------------------------------------------------- main ---
-const [census, bls, fred, redfin] = await Promise.all([doCensus(), doBls(), doFred(), doRedfin()]);
+const [census, bls, fred, redfin] = await Promise.all([doCensus(), doBls(), doFred(), doRedfin(), doCalendar()]);
 
 const write = (name, payload) =>
   writeFileSync(join(OUT, `${name}.json`), JSON.stringify(payload), 'utf8');
