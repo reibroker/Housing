@@ -1,0 +1,72 @@
+name: Refresh data snapshot
+
+# Fetches every source SERVER-SIDE and commits the result into public/data/.
+#
+# This is the answer to the CORS problem. BLS, FRED and Redfin do not send
+# Access-Control-Allow-Origin, so a browser on a static host cannot read them no
+# matter how the request is formed. A GitHub runner has no CORS policy, so it
+# fetches freely; the app then loads the committed JSON from its own origin,
+# which needs no preflight, no proxy and no API key in the browser.
+#
+# The app keeps its direct-fetch adapters for anyone who supplies their own key
+# and wants live numbers. The snapshot is the default because it always works.
+#
+# Cadence: these series publish monthly at best (weekly for mortgage rates), so
+# a daily run is already far more often than the data changes.
+
+on:
+  schedule:
+    - cron: '17 11 * * *'   # 11:17 UTC daily — after the US morning releases
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/fetch-data.mjs'
+      - '.github/workflows/data.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch all sources
+        env:
+          # Census rejects unkeyed requests. Add a repository secret named
+          # CENSUS_API_KEY (free: api.census.gov/data/key_signup.html).
+          # Kept server-side — it never reaches the browser or the bundle.
+          CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
+          # Optional: raises BLS from 25 to 500 requests/day.
+          BLS_API_KEY: ${{ secrets.BLS_API_KEY }}
+          HISTORY_YEARS: '12'
+        run: node scripts/fetch-data.mjs
+
+      - name: Summarize
+        run: |
+          echo '### Data refresh' >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          cat public/data/manifest.json >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Commit the snapshot
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add public/data data-report.json
+          if git diff --staged --quiet; then
+            echo "No change in the data snapshot."
+          else
+            git commit -m "chore(data): refresh snapshot [skip ci]"
+            git push
+          fi
