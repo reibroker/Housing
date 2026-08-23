@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-23T20:38:04.072Z",
+  "generatedAt": "2026-08-23T20:39:46.241Z",
   "node": "v20.20.2",
   "sources": {
     "census": {
@@ -10,6 +10,100 @@
       "unmatched": [],
       "allCodes": {},
       "error": "CENSUS_API_KEY not set — Census rejects every unkeyed request."
+    },
+    "fred": {
+      "ok": true,
+      "cors": null,
+      "series": {
+        "mortgage30yr": {
+          "ok": true,
+          "header": [
+            "observation_date",
+            "MORTGAGE30US"
+          ],
+          "n": 626,
+          "last": {
+            "date": "2026-08-20",
+            "value": 6.65
+          }
+        },
+        "consumerSentiment": {
+          "ok": true,
+          "header": [
+            "observation_date",
+            "UMCSENT"
+          ],
+          "n": 143,
+          "last": {
+            "date": "2026-06-01",
+            "value": 49.5
+          }
+        },
+        "revolvingCredit": {
+          "ok": true,
+          "header": [
+            "observation_date",
+            "REVOLSL"
+          ],
+          "n": 143,
+          "last": {
+            "date": "2026-06-01",
+            "value": 1351.0691399999998
+          }
+        },
+        "creditCardDelinquency": {
+          "ok": true,
+          "header": [
+            "observation_date",
+            "DRCCLACBS"
+          ],
+          "n": 47,
+          "last": {
+            "date": "2026-01-01",
+            "value": 2.92
+          }
+        },
+        "caseShiller": {
+          "ok": true,
+          "header": [
+            "observation_date",
+            "CSUSHPINSA"
+          ],
+          "n": 142,
+          "last": {
+            "date": "2026-05-01",
+            "value": 335.104
+          }
+        },
+        "existingHomeSales": {
+          "ok": true,
+          "header": [
+            "observation_date",
+            "EXHOSLUSM495S"
+          ],
+          "n": 13,
+          "last": {
+            "date": "2026-07-01",
+            "value": 4060000
+          }
+        }
+      }
+    },
+    "bls": {
+      "ok": true,
+      "cors": "*",
+      "keyed": false,
+      "status": "REQUEST_SUCCEEDED",
+      "message": [],
+      "counts": {
+        "residentialConstructionJobs": 115,
+        "residentialTradeJobs": 115,
+        "constructionJobs": 115,
+        "totalNonfarm": 115,
+        "unemploymentRate": 115,
+        "cpiShelter": 115,
+        "stateUnemploymentRate": 0
+      }
     },
     "redfin": {
       "ok": true,
@@ -114,22 +208,6 @@
         }
       }
     },
-    "bls": {
-      "ok": true,
-      "cors": "*",
-      "keyed": false,
-      "status": "REQUEST_SUCCEEDED",
-      "message": [],
-      "counts": {
-        "residentialConstructionJobs": 115,
-        "residentialTradeJobs": 115,
-        "constructionJobs": 115,
-        "totalNonfarm": 115,
-        "unemploymentRate": 115,
-        "cpiShelter": 115,
-        "stateUnemploymentRate": 0
-      }
-    },
     "calendar": {
       "probes": {
         "bls_ics": {
@@ -159,84 +237,6 @@
         "fred_releases": {
           "ok": false,
           "error": "HTTP 400 Bad Request — {\"error_code\":400,\"error_message\":\"Bad Request.  The value for variable api_key is not a 32 character alpha-numeric lower-case string.  Read https:\\/\\/fred.stlouisfed.org\\/docs\\"
-        }
-      }
-    },
-    "fred": {
-      "ok": true,
-      "cors": null,
-      "series": {
-        "mortgage30yr": {
-          "ok": true,
-          "header": [
-            "observation_date",
-            "MORTGAGE30US"
-          ],
-          "n": 626,
-          "last": {
-            "date": "2026-08-20",
-            "value": 6.65
-          }
-        },
-        "consumerSentiment": {
-          "ok": true,
-          "header": [
-            "observation_date",
-            "UMCSENT"
-          ],
-          "n": 143,
-          "last": {
-            "date": "2026-06-01",
-            "value": 49.5
-          }
-        },
-        "revolvingCredit": {
-          "ok": true,
-          "header": [
-            "observation_date",
-            "REVOLSL"
-          ],
-          "n": 143,
-          "last": {
-            "date": "2026-06-01",
-            "value": 1351.0691399999998
-          }
-        },
-        "creditCardDelinquency": {
-          "ok": true,
-          "header": [
-            "observation_date",
-            "DRCCLACBS"
-          ],
-          "n": 47,
-          "last": {
-            "date": "2026-01-01",
-            "value": 2.92
-          }
-        },
-        "caseShiller": {
-          "ok": true,
-          "header": [
-            "observation_date",
-            "CSUSHPINSA"
-          ],
-          "n": 142,
-          "last": {
-            "date": "2026-05-01",
-            "value": 335.104
-          }
-        },
-        "existingHomeSales": {
-          "ok": true,
-          "header": [
-            "observation_date",
-            "EXHOSLUSM495S"
-          ],
-          "n": 13,
-          "last": {
-            "date": "2026-07-01",
-            "value": 4060000
-          }
         }
       }
     }
