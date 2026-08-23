@@ -1,0 +1,117 @@
+{
+  "generatedAt": "2026-08-23T20:29:27.262Z",
+  "node": "v20.20.2",
+  "sources": {
+    "census": {
+      "ok": false,
+      "cors": null,
+      "datasets": {},
+      "resolved": {},
+      "unmatched": [],
+      "allCodes": {},
+      "error": "CENSUS_API_KEY not set — Census rejects every unkeyed request."
+    },
+    "redfin": {
+      "ok": false,
+      "cors": null,
+      "contentLength": "486979",
+      "error": "None of the requested columns were found. File header was: PERIOD_BEGIN, PERIOD_END, PERIOD_DURATION, REGION_TYPE, REGION_TYPE_ID, TABLE_ID, IS_SEASONALLY_ADJUSTED, REGION, CITY, STATE, STATE_CODE, PROPERTY_TYPE..."
+    },
+    "bls": {
+      "ok": true,
+      "cors": "*",
+      "keyed": false,
+      "status": "REQUEST_SUCCEEDED",
+      "message": [
+        "Year range has been reduced to the system-allowed limit of 10 years."
+      ],
+      "counts": {
+        "residentialConstructionJobs": 120,
+        "residentialTradeJobs": 120,
+        "constructionJobs": 120,
+        "totalNonfarm": 120,
+        "unemploymentRate": 120,
+        "cpiShelter": 120,
+        "stateUnemploymentRate": 0
+      }
+    },
+    "fred": {
+      "ok": true,
+      "cors": null,
+      "series": {
+        "mortgage30yr": {
+          "ok": true,
+          "header": [
+            "observation_date",
+            "MORTGAGE30US"
+          ],
+          "n": 626,
+          "last": {
+            "date": "2026-08-20",
+            "value": 6.65
+          }
+        },
+        "consumerSentiment": {
+          "ok": true,
+          "header": [
+            "observation_date",
+            "UMCSENT"
+          ],
+          "n": 143,
+          "last": {
+            "date": "2026-06-01",
+            "value": 49.5
+          }
+        },
+        "revolvingCredit": {
+          "ok": true,
+          "header": [
+            "observation_date",
+            "REVOLSL"
+          ],
+          "n": 143,
+          "last": {
+            "date": "2026-06-01",
+            "value": 1351069.14
+          }
+        },
+        "creditCardDelinquency": {
+          "ok": true,
+          "header": [
+            "observation_date",
+            "DRCCLACBS"
+          ],
+          "n": 47,
+          "last": {
+            "date": "2026-01-01",
+            "value": 2.92
+          }
+        },
+        "caseShiller": {
+          "ok": true,
+          "header": [
+            "observation_date",
+            "CSUSHPINSA"
+          ],
+          "n": 142,
+          "last": {
+            "date": "2026-05-01",
+            "value": 335.104
+          }
+        },
+        "existingHomeSales": {
+          "ok": true,
+          "header": [
+            "observation_date",
+            "EXHOSLUSM495S"
+          ],
+          "n": 13,
+          "last": {
+            "date": "2026-07-01",
+            "value": 4060000
+          }
+        }
+      }
+    }
+  }
+}
