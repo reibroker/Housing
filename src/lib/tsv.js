@@ -87,13 +87,29 @@ export async function parseTsvStream(stream, opts = {}) {
         if (header === null) {
           header = line.split('\t').map((h) => h.trim().replace(/^"|"$/g, ''));
           if (columns) {
+            // Column names are matched CASE-INSENSITIVELY and the value is stored
+            // under the name the caller asked for. Redfin ships this file with
+            // UPPERCASE headers (PERIOD_BEGIN, PROPERTY_TYPE, ...) while their
+            // documentation and every published example use lowercase, and an
+            // exact match silently yields zero rows -- which reads downstream as
+            // "no data" rather than "wrong case". Normalizing here means callers
+            // and row filters can use one spelling regardless of what the
+            // publisher sends, today or after their next schema change.
+            const lower = header.map((h) => h.toLowerCase());
             keepIdx = columns
-              .map((c) => ({ name: c, i: header.indexOf(c) }))
+              .map((c) => ({ name: c, i: lower.indexOf(c.toLowerCase()) }))
               .filter((x) => x.i !== -1);
             if (keepIdx.length === 0) {
               throw new ParseError(
-                `None of the requested columns were found. File header was: ${header.slice(0, 12).join(', ')}...`
+                `None of the requested columns were found (matching is case-insensitive). ` +
+                  `Requested: ${columns.join(', ')}. File header: ${header.join(', ')}`
               );
+            }
+            const missing = columns.filter((c) => !lower.includes(c.toLowerCase()));
+            if (missing.length) {
+              // Partial matches are usable, but the caller should know which
+              // fields will be absent rather than silently reading undefined.
+              console.warn(`[tsv] columns not present in file: ${missing.join(', ')}`);
             }
           }
           continue;

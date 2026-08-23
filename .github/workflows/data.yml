@@ -59,6 +59,12 @@ jobs:
           cat public/data/manifest.json >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
+      # The snapshot lives in public/, so Vite bundles it at build time, which
+      # means the site must rebuild before new data reaches anyone. This commit
+      # deliberately does NOT carry [skip ci]: that marker skips every workflow
+      # on the commit, including the Pages deploy, and the published site would
+      # go on serving the first snapshot forever. CI is kept off these commits
+      # by a paths-ignore filter in ci.yml instead.
       - name: Commit the snapshot
         run: |
           git config user.name  'github-actions[bot]'
@@ -67,6 +73,6 @@ jobs:
           if git diff --staged --quiet; then
             echo "No change in the data snapshot."
           else
-            git commit -m "chore(data): refresh snapshot [skip ci]"
+            git commit -m "chore(data): refresh snapshot"
             git push
           fi

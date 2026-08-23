@@ -245,6 +245,11 @@ const FRED_IDS = {
   existingHomeSales: 'EXHOSLUSM495S',
 };
 
+// REVOLSL is published in MILLIONS of dollars; the dashboard charts it in
+// billions, which is how the figure is normally quoted. Must stay in step with
+// the `scale` field in src/data/fred.js.
+const FRED_SCALE = { revolvingCredit: 1 / 1000 };
+
 async function doFred() {
   const info = { ok: false, cors: null, series: {} };
   const start = new Date();
@@ -258,8 +263,12 @@ async function doFred() {
       const { header, rows } = parseCsv(data);
       const dateCol = header.find((h) => /^(observation_date|DATE)$/i.test(h)) || header[0];
       const valCol = header.find((h) => h !== dateCol) || id;
+      const scale = FRED_SCALE[name] ?? 1;
       const pts = rows
-        .map((r) => ({ date: String(r[dateCol] || '').slice(0, 10), value: num(r[valCol]) }))
+        .map((r) => {
+          const v = num(r[valCol]);
+          return { date: String(r[dateCol] || '').slice(0, 10), value: v === null ? null : v * scale };
+        })
         .filter((p) => /^\d{4}-\d{2}-\d{2}$/.test(p.date));
       series[name] = pts.length ? pts : null;
       info.series[name] = { ok: Boolean(pts.length), header, n: pts.length, last: pts[pts.length - 1] || null };

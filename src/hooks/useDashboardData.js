@@ -19,11 +19,23 @@ import { loadFred } from '../data/fred.js';
 import { loadRedfin, loadRedfinFromFile } from '../data/redfin.js';
 import { computeRiskScore, historicalScore } from '../model/riskModel.js';
 import { generateDemoData } from '../data/demo.js';
+import { loadSnapshot } from '../data/snapshot.js';
 import { getConfig } from '../config/env.js';
 
 const emptySource = () => ({ data: null, meta: null, error: null, loading: false });
 
-export default function useDashboardData({ stateFips = null, stateCode = null, demo = false } = {}) {
+/**
+ * @param {object} opts
+ * @param {'snapshot'|'live'|'demo'} opts.mode
+ *   snapshot -- read the CI-built JSON from our own origin (default; the only
+ *               mode that can assemble a complete dashboard on a static host,
+ *               because FRED and Redfin send no CORS headers)
+ *   live     -- fetch each API directly from the browser (needs a Census key;
+ *               expect FRED and Redfin to be blocked)
+ *   demo     -- locally generated synthetic data, no network at all
+ */
+export default function useDashboardData({ stateFips = null, stateCode = null, mode = 'snapshot' } = {}) {
+  const demo = mode === 'demo';
   const [census, setCensus] = useState(emptySource);
   const [bls, setBls] = useState(emptySource);
   const [fred, setFred] = useState(emptySource);
@@ -64,6 +76,36 @@ export default function useDashboardData({ stateFips = null, stateCode = null, d
     // whole UI works with no key, no CORS and no connectivity -- see
     // src/data/demo.js for why this exists and what the numbers are (and
     // are not).
+    if (mode === 'snapshot') {
+      setCensus((s) => ({ ...s, loading: true, error: null }));
+      setBls((s) => ({ ...s, loading: true, error: null }));
+      setFred((s) => ({ ...s, loading: true, error: null }));
+      setRedfin((s) => ({ ...s, loading: true, error: null }));
+      try {
+        const snap = await loadSnapshot();
+        if (generation.current !== gen) return;
+        const put = (setter, key) =>
+          setter({
+            data: snap.series[key],
+            meta: { ...(snap.meta[key] || {}), manifest: snap.manifest },
+            errors: {},
+            error: snap.errors[key] || null,
+            loading: false,
+          });
+        put(setCensus, 'census');
+        put(setBls, 'bls');
+        put(setFred, 'fred');
+        put(setRedfin, 'redfin');
+      } catch (e) {
+        if (generation.current !== gen) return;
+        // A missing or unreadable manifest is one failure, not four -- report it
+        // identically on every panel so the cause is obvious.
+        const fail = (setter) => setter({ data: null, meta: null, error: e, loading: false });
+        [setCensus, setBls, setFred, setRedfin].forEach(fail);
+      }
+      return;
+    }
+
     if (demo) {
       const d = generateDemoData(getConfig().historyYears);
       setCensus({ data: d.census, meta: { ...d.meta, ...d.censusMeta, resolution: {}, rawSeries: {} }, error: null, loading: false });
@@ -109,7 +151,7 @@ export default function useDashboardData({ stateFips = null, stateCode = null, d
       });
 
     loadRedfinSource(gen);
-  }, [stateFips, loadRedfinSource, demo]);
+  }, [stateFips, loadRedfinSource, demo, mode]);
 
   /** Accept a Redfin file the user dropped in, bypassing the network entirely. */
   const ingestRedfinFile = useCallback(
@@ -137,7 +179,7 @@ export default function useDashboardData({ stateFips = null, stateCode = null, d
   useEffect(() => {
     loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stateFips, stateCode, demo]);
+  }, [stateFips, stateCode, demo, mode]);
 
   const bundle = { census: census.data, bls: bls.data, fred: fred.data, redfin: redfin.data };
   const risk = computeRiskScore(bundle);
@@ -145,6 +187,7 @@ export default function useDashboardData({ stateFips = null, stateCode = null, d
 
   return {
     demo,
+    mode,
     census,
     bls,
     fred,

@@ -47,22 +47,33 @@ function yoySeries(series, periods = 12) {
 
 /** Demo-mode toggle, persisted so a reload on a tablet does not lose it. The
  *  persistent banner is what keeps the setting from being forgotten. */
-function useDemoMode() {
-  const [demo, setDemo] = useState(() => {
+/**
+ * Which data source the dashboard reads. Persisted so a reload on a tablet does
+ * not lose the choice.
+ *
+ *   snapshot -- CI-built JSON served from our own origin. The default, and the
+ *               only mode that can fill every panel on a static host: FRED and
+ *               Redfin send no CORS headers, so the browser refuses to read them
+ *               directly no matter what we do.
+ *   live     -- direct browser fetch. Needs your own Census key; BLS works
+ *               (it does send CORS), FRED and Redfin will be blocked.
+ *   demo     -- synthetic, no network.
+ */
+function useDataMode() {
+  const [mode, setMode] = useState(() => {
     try {
-      const stored = localStorage.getItem('hmd:demo');
-      if (stored !== null) return stored === 'true';
+      const stored = localStorage.getItem('hmd:mode');
+      if (stored === 'snapshot' || stored === 'live' || stored === 'demo') return stored;
+      // Migrate the old boolean demo flag.
+      if (localStorage.getItem('hmd:demo') === 'true') return 'demo';
     } catch { /* storage blocked */ }
-    // VITE_DEFAULT_DEMO lets a keyless deploy (e.g. GitHub Pages) open in demo
-    // mode so the page is not blank on arrival. An explicit user choice always
-    // wins over it.
-    return String(import.meta.env.VITE_DEFAULT_DEMO) === 'true';
+    return 'snapshot';
   });
   const apply = (v) => {
-    setDemo(v);
-    try { localStorage.setItem('hmd:demo', String(v)); } catch { /* non-persistent */ }
+    setMode(v);
+    try { localStorage.setItem('hmd:mode', v); } catch { /* non-persistent */ }
   };
-  return [demo, apply];
+  return [mode, apply];
 }
 
 function useTheme() {
@@ -82,7 +93,8 @@ export default function App() {
   const [tab, setTab] = useState('overview');
   const [stateFips, setStateFips] = useState('');
   const [theme, setTheme] = useTheme();
-  const [demo, setDemo] = useDemoMode();
+  const [mode, setMode] = useDataMode();
+  const demo = mode === 'demo';
   const cfg = getConfig();
 
   const selectedState = STATES.find((s) => s.fips === stateFips) || null;
@@ -93,12 +105,22 @@ export default function App() {
   } = useDashboardData({
     stateFips: selectedState?.fips || null,
     stateCode: selectedState?.code || null,
-    demo,
+    mode,
   });
 
   const scope = selectedState ? selectedState.name : 'United States';
 
   const caseShillerYoY = useMemo(() => yoySeries(fred.data?.caseShiller), [fred.data]);
+
+  // Freshness of the published snapshot, in plain language.
+  const snapshotAge = useMemo(() => {
+    const at = fred.meta?.generatedAt || bls.meta?.generatedAt || redfin.meta?.generatedAt;
+    if (!at) return null;
+    const hrs = (Date.now() - new Date(at).getTime()) / 3_600_000;
+    if (hrs < 1) return 'less than an hour ago';
+    if (hrs < 48) return `${Math.round(hrs)} hours ago`;
+    return `${Math.round(hrs / 24)} days ago`;
+  }, [fred.meta, bls.meta, redfin.meta]);
 
   return (
     <div className="app">
@@ -124,6 +146,15 @@ export default function App() {
         </div>
       </header>
 
+      {mode === 'snapshot' && snapshotAge && (
+        <div className="notice info" role="status">
+          <strong>Reading the published data snapshot</strong>
+          Built {snapshotAge}. FRED and Redfin send no CORS headers, so a browser cannot read them directly — a
+          scheduled job fetches all four sources server-side and publishes them here. Switch to
+          &ldquo;Live APIs&rdquo; if you have your own Census key and want to fetch in-page.
+        </div>
+      )}
+
       {demo && (
         <div className="notice demo-banner" role="status">
           <strong>Demo mode &mdash; every number on this page is synthetic</strong>
@@ -132,7 +163,7 @@ export default function App() {
         </div>
       )}
 
-      {!cfg.censusKey && !demo && (
+      {!cfg.censusKey && mode === 'live' && (
         <div className="notice error">
           <strong>A Census API key is required</strong>
           Census rejects unkeyed requests, so the permits, housing starts and new-home panels will stay empty until you
@@ -153,15 +184,18 @@ export default function App() {
           </select>
         </div>
         <div className="field">
-          <label htmlFor="demo">Data</label>
-          <select id="demo" value={demo ? 'demo' : 'live'} onChange={(e) => setDemo(e.target.value === 'demo')}>
-            <option value="live">Live APIs</option>
+          <label htmlFor="mode">Data</label>
+          <select id="mode" value={mode} onChange={(e) => setMode(e.target.value)}>
+            <option value="snapshot">Published snapshot</option>
+            <option value="live">Live APIs (needs your key)</option>
             <option value="demo">Demo (synthetic)</option>
           </select>
         </div>
         <div className="spacer" />
         <div className="small muted" style={{ maxWidth: '46ch', textAlign: 'right' }}>
-          {demo
+          {mode === 'snapshot'
+            ? 'The published snapshot is national. Pick "Live APIs" with a Census key for state-level resale and unemployment panels.'
+            : demo
             ? 'Demo mode ignores the geography selection — the synthetic series are the same for every region.'
             : selectedState
               ? `Resale and unemployment panels show ${selectedState.name}. Construction, permits, credit and confidence are published nationally only.`
@@ -279,7 +313,7 @@ export default function App() {
 
       {tab === 'supply' && (
         <div className="stack">
-          {!demo && (redfin.error || !redfin.data) && (
+          {mode === 'live' && (redfin.error || !redfin.data) && (
             <section className="card full">
               <div className="card-head"><h3>Redfin market data</h3></div>
               <RedfinFallback

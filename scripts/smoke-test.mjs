@@ -32,6 +32,31 @@ const server = createServer((req, res) => {
 await new Promise((r) => server.listen(0, r));
 const base = `http://127.0.0.1:${server.address().port}`;
 
+// ---------------------------------------------------------------------------
+// Regression (Node-side, no browser needed): Redfin ships its market tracker
+// with UPPERCASE column headers while every published example uses lowercase.
+// Exact-match column selection silently produced zero rows, which read
+// downstream as "Redfin has no data" rather than "wrong case".
+// ---------------------------------------------------------------------------
+{
+  const { parseTsvStream } = await import('../src/lib/tsv.js');
+  const { Readable } = await import('node:stream');
+  const gz = gzipSync(Buffer.from([
+    ['PERIOD_BEGIN', 'PERIOD_DURATION', 'PROPERTY_TYPE', 'MONTHS_OF_SUPPLY'].join('\t'),
+    ['2026-06-01', '30', 'All Residential', '4.2'].join('\t'),
+  ].join('\n')));
+  const { rows } = await parseTsvStream(Readable.toWeb(Readable.from([gz])), {
+    gzipped: true,
+    columns: ['period_begin', 'period_duration', 'property_type', 'months_of_supply'],
+    filter: (r) => r.property_type === 'All Residential',
+  });
+  if (rows.length !== 1 || rows[0].months_of_supply !== '4.2') {
+    console.log('FAIL  uppercase TSV headers resolve to the requested lowercase keys');
+    process.exit(1);
+  }
+  console.log('PASS  uppercase TSV headers resolve to the requested lowercase keys');
+}
+
 // ------------------------------------------------------------------ fixtures
 const months = [];
 for (let y = 2019; y <= 2026; y++) for (let m = 1; m <= 12; m++) {
@@ -161,6 +186,7 @@ await page.route('**/redfin-public-data.s3**', (route) => {
 await page.addInitScript(() => {
   localStorage.setItem('hmd:settings:censusKey', 'TEST_KEY');
   localStorage.setItem('hmd:settings:blsKey', 'TEST_KEY');
+  localStorage.setItem('hmd:mode', 'live');   // exercise the direct-fetch adapters
 });
 
 await page.goto(base, { waitUntil: 'networkidle' });
@@ -231,7 +257,7 @@ demoPage.on('request', (r) => {
 });
 await demoPage.addInitScript(() => {
   localStorage.clear();
-  localStorage.setItem('hmd:demo', 'true');
+  localStorage.setItem('hmd:mode', 'demo');
 });
 await demoPage.goto(base, { waitUntil: 'networkidle' });
 await demoPage.waitForTimeout(2000);
@@ -267,6 +293,84 @@ await demoPage.waitForTimeout(700);
 await demoPage.screenshot({ path: 'smoke-demo.png', fullPage: false });
 check('no errors in demo mode', demoErrors.filter((e) => !/favicon|DevTools/i.test(e)).length === 0, demoErrors.join(' | ').slice(0, 300));
 await demoPage.close();
+
+// ---------------------------------------------------------------------------
+// Snapshot mode: the default, and the only mode that fills every panel on a
+// static host. Serves the same JSON shape scripts/fetch-data.mjs writes.
+// ---------------------------------------------------------------------------
+const snapSeries = (base, seasonal = 0) =>
+  months.map((t, i) => ({ date: `${t}-01`, value: Number((base + Math.sin(i / 6) * base * 0.1 + seasonal).toFixed(3)) }));
+
+const SNAP = {
+  manifest: {
+    generatedAt: new Date(Date.now() - 3 * 3600_000).toISOString(),
+    historyYears: 12,
+    sources: { census: { ok: true }, bls: { ok: true }, fred: { ok: true }, redfin: { ok: true } },
+  },
+  census: { generatedAt: new Date().toISOString(), series: {
+    permitsTotal: snapSeries(1450), permitsSingle: snapSeries(950),
+    startsTotal: snapSeries(1380), startsSingle: snapSeries(900),
+    underConstruction: snapSeries(1600), completions: snapSeries(1500),
+    newHomeSales: snapSeries(660), newHomeMonthsSupply: snapSeries(8),
+    newHomesForSale: snapSeries(480), homeownerVacancy: snapSeries(1.1),
+    rentalVacancy: snapSeries(7),
+  }},
+  bls: { generatedAt: new Date().toISOString(), series: {
+    residentialConstructionJobs: snapSeries(900), residentialTradeJobs: snapSeries(2400),
+    constructionJobs: snapSeries(8100), totalNonfarm: snapSeries(160000),
+    unemploymentRate: snapSeries(4.3), cpiShelter: snapSeries(390),
+    stateUnemploymentRate: null,
+  }},
+  fred: { generatedAt: new Date().toISOString(), series: {
+    mortgage30yr: snapSeries(6.5), consumerSentiment: snapSeries(60),
+    revolvingCredit: snapSeries(1351), creditCardDelinquency: snapSeries(3),
+    caseShiller: snapSeries(330), existingHomeSales: snapSeries(4100000),
+  }},
+  redfin: { generatedAt: new Date().toISOString(), series: {
+    medianSalePrice: snapSeries(400000), medianSalePriceYoY: snapSeries(2),
+    homesSold: snapSeries(420000), homesSoldYoY: snapSeries(-5),
+    newListings: snapSeries(500000), inventory: snapSeries(900000),
+    inventoryYoY: snapSeries(15), monthsOfSupply: snapSeries(4.5),
+    medianDaysOnMarket: snapSeries(40), saleToListRatio: snapSeries(99),
+    soldAboveList: snapSeries(28), priceDrops: snapSeries(22),
+  }},
+};
+
+const snapPage = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+const snapErrors = [];
+const snapExternal = [];
+snapPage.on('console', (m) => { if (m.type() === 'error') snapErrors.push(m.text()); });
+snapPage.on('pageerror', (e) => snapErrors.push(e.message));
+snapPage.on('request', (r) => {
+  const u = new URL(r.url());
+  if (!['127.0.0.1', 'localhost'].includes(u.hostname)) snapExternal.push(r.url());
+});
+await snapPage.route('**/data/*.json', (route) => {
+  const name = /data\/(\w+)\.json/.exec(route.request().url())?.[1];
+  const body = SNAP[name];
+  if (!body) return route.fulfill({ status: 404, body: 'nope' });
+  route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+});
+await snapPage.addInitScript(() => { localStorage.clear(); });  // default mode = snapshot
+await snapPage.goto(base, { waitUntil: 'networkidle' });
+await snapPage.waitForTimeout(2000);
+
+const snapScore = parseInt(await snapPage.locator('.gauge-value').first().innerText(), 10);
+check('snapshot mode is the default and renders a score', Number.isFinite(snapScore), String(snapScore));
+const snapCov = await snapPage.locator('.coverage').first().innerText();
+check('snapshot mode resolves every indicator', /100%/.test(snapCov), snapCov.replace(/\s+/g, ' '));
+check('snapshot mode needs no API key and no external host', snapExternal.length === 0, snapExternal.slice(0, 3).join(', '));
+check('snapshot mode shows its build age', (await snapPage.locator('.notice.info').count()) > 0);
+for (const label of ['Inventory & demand', 'Construction & permits', 'Employment', 'Credit & confidence']) {
+  await snapPage.getByRole('tab', { name: label }).click();
+  await snapPage.waitForTimeout(400);
+  check(`snapshot tab "${label}" renders charts`, (await snapPage.locator('.recharts-surface').count()) > 0);
+}
+await snapPage.getByRole('tab', { name: 'Overview' }).click();
+await snapPage.waitForTimeout(600);
+await snapPage.screenshot({ path: 'smoke-snapshot.png', fullPage: false });
+check('no errors in snapshot mode', snapErrors.filter((e) => !/favicon|DevTools/i.test(e)).length === 0, snapErrors.join(' | ').slice(0, 300));
+await snapPage.close();
 
 const ignorable = /favicon|Download the React DevTools/i;
 const realConsole = consoleErrors.filter((e) => !ignorable.test(e));

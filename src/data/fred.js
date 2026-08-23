@@ -53,6 +53,11 @@ export const FRED_SERIES = {
   revolvingCredit: {
     id: 'REVOLSL',
     label: 'Revolving consumer credit outstanding',
+    // FRED publishes REVOLSL in MILLIONS of dollars (a mid-2026 reading is
+    // ~1,351,069). Verified against the live series in CI on 2026-08-23. We
+    // divide by 1000 on ingest so the charts read in billions, which is how this
+    // figure is universally quoted.
+    scale: 1 / 1000,
     unit: '$ billions, SA',
     frequency: 'monthly',
     source: 'Federal Reserve G.19 via FRED',
@@ -152,8 +157,12 @@ export async function fetchFredSeries(seriesId, { years } = {}) {
   const dateCol = header.find((h) => /^(observation_date|DATE)$/i.test(h)) || header[0];
   const valueCol = header.find((h) => h !== dateCol) || seriesId;
 
+  const scale = Object.values(FRED_SERIES).find((s) => s.id === seriesId)?.scale ?? 1;
   const points = rows
-    .map((r) => ({ date: String(r[dateCol] || '').slice(0, 10), value: num(r[valueCol]) }))
+    .map((r) => {
+      const v = num(r[valueCol]);
+      return { date: String(r[dateCol] || '').slice(0, 10), value: v === null ? null : v * scale };
+    })
     .filter((p) => /^\d{4}-\d{2}-\d{2}$/.test(p.date))
     .sort((a, b) => (a.date < b.date ? -1 : 1));
 
