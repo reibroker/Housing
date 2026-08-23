@@ -39,8 +39,15 @@ jobs:
       # Turns Pages on for the repo if it is not already, using this workflow's
       # own `pages: write` grant. Without it the deploy job fails on a fresh repo
       # until someone flips Settings -> Pages -> Source by hand.
+      # Tries to switch Pages on using this workflow's own pages:write grant.
+      # Some account configurations do not allow a workflow token to create the
+      # Pages site, so this must never fail the build -- if it cannot enable
+      # Pages, the build still runs and uploads its artifact, and the deploy
+      # succeeds as soon as Pages is turned on at
+      # Settings -> Pages -> Source: "GitHub Actions".
       - name: Enable and configure Pages
         uses: actions/configure-pages@v5
+        continue-on-error: true
         with:
           enablement: true
 
