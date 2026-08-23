@@ -16,7 +16,12 @@ name: Refresh data snapshot
 
 on:
   schedule:
-    - cron: '17 11 * * *'   # 11:17 UTC daily — after the US morning releases
+    # Hourly. US statistical releases land at 08:30 ET, and the commit step is a
+    # no-op when nothing changed, so most runs cost a fetch and stop there. This
+    # is as close to "immediately" as a scheduled static-site pipeline gets:
+    # publication -> visible on the site inside about an hour, allowing for
+    # GitHub's scheduler drift plus the Pages rebuild.
+    - cron: '25 * * * *'
   workflow_dispatch:
   push:
     branches: [main]
