@@ -371,40 +371,90 @@ async function doRedfin() {
  * committing to a parser.
  */
 const CALENDAR_CANDIDATES = [
-  { id: 'bls_ics',        url: 'https://www.bls.gov/schedule/news_release/bls.ics', as: 'text' },
-  { id: 'bls_schedule',   url: 'https://www.bls.gov/schedule/news_release/2026_sched.htm', as: 'text' },
-  { id: 'census_ics',     url: 'https://www.census.gov/economic-indicators/calendar.ics', as: 'text' },
-  { id: 'census_cal',     url: 'https://www.census.gov/economic-indicators/calendar-listview.html', as: 'text' },
-  { id: 'fred_releases',  url: 'https://api.stlouisfed.org/fred/releases/dates?file_type=json&include_release_dates_with_no_data=true&api_key=' + (process.env.FRED_API_KEY || 'NOKEY'), as: 'text' },
+  { id: 'bls_ics',      url: 'https://www.bls.gov/schedule/news_release/bls.ics' },
+  { id: 'bls_sched_26', url: 'https://www.bls.gov/schedule/news_release/2026_sched.htm' },
+  { id: 'bls_sched_27', url: 'https://www.bls.gov/schedule/news_release/2027_sched.htm' },
+  { id: 'census_list',  url: 'https://www.census.gov/economic-indicators/calendar-listview.html' },
+  { id: 'census_ics',   url: 'https://www.census.gov/economic-indicators/calendar.ics' },
+  { id: 'census_json',  url: 'https://www.census.gov/economic-indicators/calendar.json' },
 ];
 
+/**
+ * A descriptive User-Agent, as a courtesy and because it is usually the fix.
+ *
+ * The first probe got 403 from bls.gov on every path. Federal sites routinely
+ * reject the default runtime UA (undici/Node) while serving identified clients
+ * fine — the block is aimed at anonymous scrapers, not at telling us to go away.
+ * Identifying the project and linking the repo is both the polite form and the
+ * one that tends to work. If a 403 survives this, that is a real refusal and we
+ * stop rather than dress the request up further.
+ */
+const UA = 'HousingMarketDashboard/1.0 (+https://github.com/reibroker/Housing; public data, hourly)';
+
+/** Check robots.txt before fetching anything on a host we intend to parse. */
+async function robotsAllows(origin, path) {
+  try {
+    const { data } = await get(`${origin}/robots.txt`, { as: 'text', timeoutMs: 20_000, init: { headers: { 'User-Agent': UA } } });
+    // Deliberately simple: collect Disallow rules under `*` and check for a
+    // prefix match. Good enough to catch an explicit prohibition, which is what
+    // we actually care about.
+    const lines = String(data).split(/\r?\n/).map((l) => l.trim());
+    let inStar = false;
+    const disallowed = [];
+    for (const line of lines) {
+      const ua = /^user-agent:\s*(.+)$/i.exec(line);
+      if (ua) { inStar = ua[1].trim() === '*'; continue; }
+      const dis = /^disallow:\s*(.*)$/i.exec(line);
+      if (dis && inStar && dis[1].trim()) disallowed.push(dis[1].trim());
+    }
+    const hit = disallowed.find((d) => path.startsWith(d));
+    return { allowed: !hit, matchedRule: hit || null, rules: disallowed.length };
+  } catch (e) {
+    return { allowed: null, error: e.message.slice(0, 120) };
+  }
+}
+
 async function doCalendar() {
-  const info = { probes: {} };
+  const info = { userAgent: UA, robots: {}, probes: {} };
+
+  for (const origin of ['https://www.bls.gov', 'https://www.census.gov']) {
+    info.robots[origin] = await robotsAllows(origin, origin.includes('bls') ? '/schedule/' : '/economic-indicators/');
+  }
+
   for (const c of CALENDAR_CANDIDATES) {
     try {
-      const { data, cors } = await get(c.url, { as: c.as, timeoutMs: 45_000 });
+      const { data, cors } = await get(c.url, {
+        as: 'text',
+        timeoutMs: 45_000,
+        init: { headers: { 'User-Agent': UA, Accept: 'text/calendar, text/html, application/json;q=0.9, */*;q=0.8' } },
+      });
       const text = String(data);
+      const isIcal = /BEGIN:VCALENDAR/.test(text);
       info.probes[c.id] = {
         ok: true,
         cors,
         bytes: text.length,
-        contentSniff: text.slice(0, 200).replace(/\s+/g, ' '),
-        // For iCal, count events and show one so the parser can be written
-        // against reality rather than a guess.
+        kind: isIcal ? 'ical' : /^\s*[[{]/.test(text) ? 'json' : 'html',
         vevents: (text.match(/BEGIN:VEVENT/g) || []).length,
         sampleEvent: (() => {
-          const m = /BEGIN:VEVENT([\s\S]{0,600}?)END:VEVENT/.exec(text);
-          return m ? m[1].replace(/\s+/g, ' ').slice(0, 400) : null;
+          const m = /BEGIN:VEVENT([\s\S]{0,700}?)END:VEVENT/.exec(text);
+          return m ? m[1].replace(/\s+/g, ' ').slice(0, 500) : null;
+        })(),
+        // For HTML, capture the rows so a parser can be written against the
+        // real markup instead of a guess at its structure.
+        htmlRowSample: isIcal ? null : (() => {
+          const rows = text.match(/<tr[\s\S]{0,900}?<\/tr>/gi) || [];
+          const withDate = rows.filter((r) => /\b(20\d\d|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/.test(r));
+          return withDate.slice(0, 3).map((r) => r.replace(/\s+/g, ' ').slice(0, 450));
         })(),
       };
     } catch (e) {
-      info.probes[c.id] = { ok: false, error: e.message.slice(0, 200) };
+      info.probes[c.id] = { ok: false, error: e.message.slice(0, 250) };
     }
   }
   report.sources.calendar = info;
   return null;
 }
-
 
 // ------------------------------------------------------- mirrors / checks ---
 /**
