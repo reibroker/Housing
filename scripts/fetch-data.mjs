@@ -912,9 +912,70 @@ async function doResale() {
   return raw;
 }
 
+
+/**
+ * Zillow Research public CSVs.
+ *
+ * Zillow publishes its research data as free public CSVs for anyone to use with
+ * attribution — a very different footing from a licensed calendar product, so
+ * these are fair to read and republish provided the credit is shown, which the
+ * comparison page does.
+ *
+ * Of the three portals, Zillow is the only one that publishes a machine-readable
+ * FORECAST: ZHVF, their one-year home-value growth projection. Realtor.com and
+ * Redfin publish annual outlooks as prose in articles, which is not something to
+ * parse into a number.
+ *
+ * The files are wide: RegionID, SizeRank, RegionName, RegionType, StateName,
+ * then one column per month. The national row is RegionName "United States".
+ */
+const ZILLOW_BASE = 'https://files.zillowstatic.com/research/public_csvs';
+const ZILLOW_FILES = {
+  homeValueIndex:   `${ZILLOW_BASE}/zhvi/Metro_zhvi_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv`,
+  homeValueForecast:`${ZILLOW_BASE}/zhvf_growth/Metro_zhvf_growth_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv`,
+  inventory:        `${ZILLOW_BASE}/invt_fs/Metro_invt_fs_uc_sfrcondo_sm_month.csv`,
+  newListings:      `${ZILLOW_BASE}/new_listings/Metro_new_listings_uc_sfrcondo_sm_month.csv`,
+  daysToPending:    `${ZILLOW_BASE}/med_doz_pending/Metro_med_doz_pending_uc_sfrcondo_sm_month.csv`,
+  priceCutShare:    `${ZILLOW_BASE}/perc_listings_price_cut/Metro_perc_listings_price_cut_uc_sfrcondo_sm_month.csv`,
+  medianSalePrice:  `${ZILLOW_BASE}/median_sale_price/Metro_median_sale_price_uc_sfrcondo_sm_sa_month.csv`,
+};
+
+/** Pull the "United States" row out of a wide Zillow CSV and melt it long. */
+function zillowNationalSeries(csvText) {
+  const { header, rows } = parseCsv(csvText);
+  const nameCol = header.find((h) => /^RegionName$/i.test(h));
+  if (!nameCol) throw new Error(`No RegionName column. Header starts: ${header.slice(0, 6).join(', ')}`);
+  const row = rows.find((r) => String(r[nameCol]).trim() === 'United States');
+  if (!row) throw new Error('No "United States" row in this file.');
+  const dateCols = header.filter((h) => /^\d{4}-\d{2}-\d{2}$/.test(h));
+  const pts = dateCols
+    .map((d) => ({ date: `${d.slice(0, 7)}-01`, value: num(row[d]) }))
+    .filter((p) => p.value !== null);
+  return { points: pts, dateColumns: dateCols.length, meta: { sizeRank: row.SizeRank, regionType: row.RegionType } };
+}
+
+async function doZillow() {
+  const info = { attribution: 'Zillow Group, Zillow Research public data', resolved: {}, failed: {} };
+  const out = {};
+  for (const [name, url] of Object.entries(ZILLOW_FILES)) {
+    try {
+      const { data } = await get(url, { as: 'text', timeoutMs: 120_000, init: { headers: { 'User-Agent': UA } } });
+      const { points, dateColumns } = zillowNationalSeries(String(data));
+      out[name] = points;
+      info.resolved[name] = { n: points.length, dateColumns, first: points[0], last: points[points.length - 1] };
+    } catch (e) {
+      out[name] = null;
+      info.failed[name] = e.message.slice(0, 180);
+    }
+  }
+  info.ok = Object.values(out).some((v) => v?.length);
+  report.sources.zillow = info;
+  return out;
+}
+
 // ------------------------------------------------------------------- main ---
-const [census, bls, fred, redfin, calendarEvents, mirrors, resale] = await Promise.all([
-  doCensus(), doBls(), doFred(), doRedfin(), doCalendar(), doMirrors(), doResale(),
+const [census, bls, fred, redfin, calendarEvents, mirrors, resale, zillow] = await Promise.all([
+  doCensus(), doBls(), doFred(), doRedfin(), doCalendar(), doMirrors(), doResale(), doZillow(),
 ]);
 await probeRedfinFreshness();
 
@@ -951,6 +1012,7 @@ write('bls', { series: bls, generatedAt: report.generatedAt });
 write('fred', { series: fred, generatedAt: report.generatedAt });
 write('redfin', { series: redfin, generatedAt: report.generatedAt });
 write('resale', { series: resale, generatedAt: report.generatedAt });
+write('zillow', { series: zillow, generatedAt: report.generatedAt, attribution: 'Zillow Group, Zillow Research' });
 
 // The manifest is what the UI reports as source status, so it must describe the
 // data that actually shipped -- not the raw fetch outcome. A Census fetch that
@@ -958,7 +1020,7 @@ write('resale', { series: resale, generatedAt: report.generatedAt });
 // mirror, is a working panel sourced elsewhere; reporting it as "failed" next to
 // a chart full of data is worse than useless. `calendar` and `mirrors` are a
 // probe and a support layer, not user-facing sources, so they stay out.
-const DATA_SOURCES = ['census', 'bls', 'fred', 'redfin', 'resale'];
+const DATA_SOURCES = ['census', 'bls', 'fred', 'redfin', 'resale', 'zillow'];
 const filledCount = Object.keys(filledFrom).length;
 
 const manifest = {
