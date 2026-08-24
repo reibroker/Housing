@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-24T17:52:21.650Z",
+  "generatedAt": "2026-08-24T19:06:14.587Z",
   "node": "v20.20.2",
   "sources": {
     "census": {
@@ -115,20 +115,10 @@
       }
     },
     "bls": {
-      "ok": true,
-      "cors": "*",
+      "ok": false,
+      "cors": null,
       "keyed": false,
-      "status": "REQUEST_SUCCEEDED",
-      "message": [],
-      "counts": {
-        "residentialConstructionJobs": 115,
-        "residentialTradeJobs": 115,
-        "constructionJobs": 115,
-        "totalNonfarm": 115,
-        "unemploymentRate": 115,
-        "cpiShelter": 115,
-        "stateUnemploymentRate": 0
-      }
+      "error": "HTTP 503 Service Unavailable — The BLS website is busy \r\n\n (window.BOOMR_mq=window.BOOMR_mq||[]).push([\"addVar\",{\"rua.upush\":\"false\",\"rua.cpush\":\"false\",\"rua.upre\":\"false\",\"rua.cpre\":\"false\",\"rua.uprl\":\"false\",\"rua.cprl\":\"false\",\"r"
     },
     "calendar": {
       "probes": {
