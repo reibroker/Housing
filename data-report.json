@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-24T20:38:54.695Z",
+  "generatedAt": "2026-08-24T20:42:42.156Z",
   "node": "v20.20.2",
   "sources": {
     "census": {
@@ -10,6 +10,22 @@
       "unmatched": [],
       "allCodes": {},
       "error": "CENSUS_API_KEY not set — Census rejects every unkeyed request."
+    },
+    "bls": {
+      "ok": true,
+      "cors": "*",
+      "keyed": false,
+      "status": "REQUEST_SUCCEEDED",
+      "message": [],
+      "counts": {
+        "residentialConstructionJobs": 115,
+        "residentialTradeJobs": 115,
+        "constructionJobs": 115,
+        "totalNonfarm": 115,
+        "unemploymentRate": 115,
+        "cpiShelter": 115,
+        "stateUnemploymentRate": 0
+      }
     },
     "redfin": {
       "ok": true,
@@ -112,22 +128,6 @@
           "date": "2026-05-01",
           "value": 19.956237169999998
         }
-      }
-    },
-    "bls": {
-      "ok": true,
-      "cors": "*",
-      "keyed": false,
-      "status": "REQUEST_SUCCEEDED",
-      "message": [],
-      "counts": {
-        "residentialConstructionJobs": 115,
-        "residentialTradeJobs": 115,
-        "constructionJobs": 115,
-        "totalNonfarm": 115,
-        "unemploymentRate": 115,
-        "cpiShelter": 115,
-        "stateUnemploymentRate": 0
       }
     },
     "calendar": {
@@ -268,6 +268,84 @@
           }
         }
       }
+    },
+    "resale": {
+      "resolved": {
+        "activeListings": {
+          "id": "ACTLISCOUUS",
+          "n": 121,
+          "last": {
+            "date": "2026-07-01",
+            "value": 1126252
+          }
+        },
+        "newListings": {
+          "id": "NEWLISCOUUS",
+          "n": 121,
+          "last": {
+            "date": "2026-07-01",
+            "value": 423732
+          }
+        },
+        "medianDaysOnMarket": {
+          "id": "MEDDAYONMARUS",
+          "n": 121,
+          "last": {
+            "date": "2026-07-01",
+            "value": 57
+          }
+        },
+        "priceReducedCount": {
+          "id": "PRIREDCOUUS",
+          "n": 121,
+          "last": {
+            "date": "2026-07-01",
+            "value": 404344
+          }
+        },
+        "medianListPrice": {
+          "id": "MEDLISPRIUS",
+          "n": 121,
+          "last": {
+            "date": "2026-07-01",
+            "value": 428950
+          }
+        },
+        "existingMonthsSupply": {
+          "id": "HOSSUPUSM673N",
+          "n": 13,
+          "last": {
+            "date": "2026-07-01",
+            "value": 4.6
+          }
+        },
+        "existingHomeSales": {
+          "id": "EXHOSLUSM495S",
+          "n": 13,
+          "last": {
+            "date": "2026-07-01",
+            "value": 4060000
+          }
+        },
+        "priceReducedShare": {
+          "id": "PRIREDCOUUS / ACTLISCOUUS",
+          "n": 121,
+          "last": {
+            "date": "2026-07-01",
+            "value": 35.90173424775273
+          }
+        },
+        "derivedMonthsOfSupply": {
+          "id": "ACTLISCOUUS / (EXHOSLUSM495S / 12)",
+          "n": 13,
+          "last": {
+            "date": "2026-07-01",
+            "value": 3.328823645320197
+          }
+        }
+      },
+      "failed": {},
+      "ok": true
     },
     "mirrors": {
       "resolved": {
@@ -425,109 +503,6 @@
       "durations": [
         null
       ]
-    }
-  },
-  "resaleSubstitutes": {
-    "activeListings": {
-      "id": "ACTLISCOUUS",
-      "n": 121,
-      "first": {
-        "date": "2016-07-01",
-        "value": 1463025
-      },
-      "last": {
-        "date": "2026-07-01",
-        "value": 1126252
-      }
-    },
-    "newListings": {
-      "id": "NEWLISCOUUS",
-      "n": 121,
-      "first": {
-        "date": "2016-07-01",
-        "value": 527576
-      },
-      "last": {
-        "date": "2026-07-01",
-        "value": 423732
-      }
-    },
-    "medianDaysOnMarket": {
-      "id": "MEDDAYONMARUS",
-      "n": 121,
-      "first": {
-        "date": "2016-07-01",
-        "value": 64
-      },
-      "last": {
-        "date": "2026-07-01",
-        "value": 57
-      }
-    },
-    "priceReducedCount": {
-      "id": "PRIREDCOUUS",
-      "n": 121,
-      "first": {
-        "date": "2016-07-01",
-        "value": 418920
-      },
-      "last": {
-        "date": "2026-07-01",
-        "value": 404344
-      }
-    },
-    "medianListPrice": {
-      "id": "MEDLISPRIUS",
-      "n": 121,
-      "first": {
-        "date": "2016-07-01",
-        "value": 259000
-      },
-      "last": {
-        "date": "2026-07-01",
-        "value": 428950
-      }
-    },
-    "totalListings": {
-      "failed": [
-        "TOTLISCOUUS: HTTP 404 Not Found — Error - St. Louis Fed \r\n     \r\n         \r\n     \r\n     \r\n   "
-      ]
-    },
-    "existingMonthsSupply": {
-      "id": "HOSSUPUSM673N",
-      "n": 13,
-      "first": {
-        "date": "2025-07-01",
-        "value": 4.6
-      },
-      "last": {
-        "date": "2026-07-01",
-        "value": 4.6
-      }
-    },
-    "existingHomeSales": {
-      "id": "EXHOSLUSM495S",
-      "n": 13,
-      "first": {
-        "date": "2025-07-01",
-        "value": 4030000
-      },
-      "last": {
-        "date": "2026-07-01",
-        "value": 4060000
-      }
-    },
-    "pendingSales": {
-      "id": "HSN1FNSA",
-      "n": 143,
-      "first": {
-        "date": "2014-08-01",
-        "value": 36
-      },
-      "last": {
-        "date": "2026-06-01",
-        "value": 54
-      }
     }
   },
   "crossChecks": {
@@ -872,7 +847,7 @@
       "rule": "Last Tuesday, two months in arrears"
     },
     "existingHomeSales": {
-      "group": "fred",
+      "group": "resale",
       "ok": true,
       "latest": "2026-07-01",
       "latestValue": 4060000,
@@ -932,14 +907,14 @@
       "rule": null
     },
     "newListings": {
-      "group": "redfin",
+      "group": "resale",
       "ok": true,
-      "latest": "2026-05-01",
-      "latestValue": 540196.67326278,
-      "ageDays": 116,
+      "latest": "2026-07-01",
+      "latestValue": 423732,
+      "ageDays": 55,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
-      "overdue": true,
+      "overdue": false,
       "cadence": "monthly",
       "rule": null
     },
@@ -980,14 +955,14 @@
       "rule": "Mid-month for the prior month"
     },
     "medianDaysOnMarket": {
-      "group": "redfin",
+      "group": "resale",
       "ok": true,
-      "latest": "2026-05-01",
-      "latestValue": 50.022834756,
-      "ageDays": 116,
+      "latest": "2026-07-01",
+      "latestValue": 57,
+      "ageDays": 55,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
-      "overdue": true,
+      "overdue": false,
       "cadence": "monthly",
       "rule": null
     },
@@ -1026,6 +1001,78 @@
       "overdue": true,
       "cadence": "monthly",
       "rule": "Mid-month for the prior month"
+    },
+    "activeListings": {
+      "group": "resale",
+      "ok": true,
+      "latest": "2026-07-01",
+      "latestValue": 1126252,
+      "ageDays": 55,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
+      "overdue": false,
+      "cadence": "monthly",
+      "rule": null
+    },
+    "priceReducedCount": {
+      "group": "resale",
+      "ok": true,
+      "latest": "2026-07-01",
+      "latestValue": 404344,
+      "ageDays": 55,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
+      "overdue": false,
+      "cadence": "monthly",
+      "rule": null
+    },
+    "medianListPrice": {
+      "group": "resale",
+      "ok": true,
+      "latest": "2026-07-01",
+      "latestValue": 428950,
+      "ageDays": 55,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
+      "overdue": false,
+      "cadence": "monthly",
+      "rule": null
+    },
+    "existingMonthsSupply": {
+      "group": "resale",
+      "ok": true,
+      "latest": "2026-07-01",
+      "latestValue": 4.6,
+      "ageDays": 55,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
+      "overdue": false,
+      "cadence": "monthly",
+      "rule": null
+    },
+    "priceReducedShare": {
+      "group": "resale",
+      "ok": true,
+      "latest": "2026-07-01",
+      "latestValue": 35.90173424775273,
+      "ageDays": 55,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
+      "overdue": false,
+      "cadence": "monthly",
+      "rule": null
+    },
+    "derivedMonthsOfSupply": {
+      "group": "resale",
+      "ok": true,
+      "latest": "2026-07-01",
+      "latestValue": 3.328823645320197,
+      "ageDays": 55,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
+      "overdue": false,
+      "cadence": "monthly",
+      "rule": null
     }
   }
 }
