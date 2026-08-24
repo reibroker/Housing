@@ -19,6 +19,7 @@ import RiskBreakdown from './components/RiskBreakdown.jsx';
 import RedfinFallback from './components/RedfinFallback.jsx';
 import SettingsPanel from './components/SettingsPanel.jsx';
 import DataSourcesPanel from './components/DataSourcesPanel.jsx';
+import ReleasesPanel from './components/ReleasesPanel.jsx';
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
@@ -26,6 +27,7 @@ const TABS = [
   { id: 'construction', label: 'Construction & permits' },
   { id: 'employment', label: 'Employment' },
   { id: 'credit', label: 'Credit & confidence' },
+  { id: 'releases', label: 'Releases' },
   { id: 'sources', label: 'Data sources' },
   { id: 'settings', label: 'Settings' },
 ];
@@ -100,7 +102,7 @@ export default function App() {
   const selectedState = STATES.find((s) => s.fips === stateFips) || null;
 
   const {
-    census, bls, fred, redfin, redfinProgress,
+    census, bls, fred, redfin, redfinProgress, calendar,
     risk, riskHistory, reload, ingestRedfinFile, anyLoading,
   } = useDashboardData({
     stateFips: selectedState?.fips || null,
@@ -731,6 +733,9 @@ export default function App() {
         </div>
       )}
 
+      {tab === 'releases' && (
+        <ReleasesPanel calendar={calendar} loading={anyLoading} error={mode === 'snapshot' ? null : new Error('The release calendar is published with the data snapshot. Switch the Data selector to "Published snapshot" to see it.')} />
+      )}
       {tab === "sources" && <DataSourcesPanel census={census} bls={bls} fred={fred} redfin={redfin} demo={demo} />}
       {tab === 'settings' && <SettingsPanel onApply={reload} />}
     </div>

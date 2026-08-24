@@ -56,6 +56,11 @@ async function getJson(name) {
 export async function loadSnapshot() {
   const manifest = await getJson('manifest');
 
+  // The release calendar is optional: a snapshot built before the calendar
+  // existed, or a run where the Census listing was unreachable, must still
+  // produce a working dashboard.
+  const calendar = await getJson('calendar').catch(() => null);
+
   const names = ['census', 'bls', 'fred', 'redfin'];
   const results = await Promise.allSettled(names.map((n) => getJson(n)));
 
@@ -91,5 +96,5 @@ export async function loadSnapshot() {
     }
   });
 
-  return { series, errors, meta, manifest };
+  return { series, errors, meta, manifest, calendar };
 }

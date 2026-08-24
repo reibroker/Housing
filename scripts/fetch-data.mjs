@@ -452,8 +452,137 @@ async function doCalendar() {
       info.probes[c.id] = { ok: false, error: e.message.slice(0, 250) };
     }
   }
+  // Build the real calendar from whichever Census listing came back as HTML.
+  const censusHtml = ['census_list', 'census_ics', 'census_json']
+    .map((id) => info.probes[id])
+    .find((p) => p?.ok && p.kind === 'html');
+
+  let events = [];
+  if (censusHtml) {
+    try {
+      const { data } = await get(
+        CALENDAR_CANDIDATES.find((c) => c.id === 'census_list').url,
+        { as: 'text', timeoutMs: 45_000, init: { headers: { 'User-Agent': UA } } }
+      );
+      events = parseCensusCalendar(String(data));
+      info.parsed = events.length;
+    } catch (e) {
+      info.parseError = e.message.slice(0, 200);
+    }
+  }
+  info.ok = events.length > 0;
   report.sources.calendar = info;
-  return null;
+  return events;
+}
+
+
+/**
+ * Parse the Census economic-indicator calendar.
+ *
+ * robots.txt at www.census.gov permits /economic-indicators/, and the listing is
+ * a US Government work. Each row carries a sortable key of the exact form
+ * YYYYMMDDHHMM, which is a far more reliable anchor than the human-readable date
+ * beside it:
+ *
+ *   <tr><td><a href="/construction/nrc/">New Residential Construction</a></td>
+ *       <td sorttable_customkey="202601201000">January 20, 2026</td>
+ *       <td>10:00 AM</td><td>December 2025</td>…</tr>
+ *
+ * BLS is not scraped: it returns 403 to identified clients and its robots.txt is
+ * itself 403, which is a refusal, not an obstacle to route around. BLS-sourced
+ * indicators get a DERIVED next-release estimate instead (see releaseRules), and
+ * the UI labels those as estimates rather than published dates.
+ */
+function parseCensusCalendar(html) {
+  const events = [];
+  const rows = html.match(/<tr[\s\S]*?<\/tr>/gi) || [];
+  for (const row of rows) {
+    const key = /sorttable_customkey="(\d{12})"/.exec(row);
+    if (!key) continue;
+    const cells = (row.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || []).map((c) =>
+      c.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim()
+    );
+    if (cells.length < 3) continue;
+    const k = key[1];
+    const iso = `${k.slice(0, 4)}-${k.slice(4, 6)}-${k.slice(6, 8)}T${k.slice(8, 10)}:${k.slice(10, 12)}:00-05:00`;
+    const href = /href="([^"]+)"/.exec(row);
+    events.push({
+      title: cells[0],
+      url: href ? `https://www.census.gov${href[1]}` : null,
+      releaseAt: iso,
+      date: `${k.slice(0, 4)}-${k.slice(4, 6)}-${k.slice(6, 8)}`,
+      time: cells[2] || null,
+      referencePeriod: cells[3] || null,
+      source: 'Census',
+    });
+  }
+  // Same release can be listed twice (advance + full report).
+  const seen = new Set();
+  return events
+    .filter((e) => { const k = e.title + e.releaseAt; if (seen.has(k)) return false; seen.add(k); return true; })
+    .sort((a, b) => (a.releaseAt < b.releaseAt ? -1 : 1));
+}
+
+/**
+ * Which Census releases move which indicators on this dashboard.
+ * Matched case-insensitively against the calendar's report title.
+ */
+const RELEASE_MAP = [
+  { match: /new residential construction/i, indicators: ['permitsTotal', 'permitsSingle', 'startsTotal', 'startsSingle', 'underConstruction', 'completions'], label: 'Permits, starts, completions' },
+  { match: /new residential sales|new home sales/i, indicators: ['newHomeSales', 'newHomeMonthsSupply', 'newHomesForSale'], label: "New-home sales and months' supply" },
+  { match: /housing vacanc/i, indicators: ['homeownerVacancy', 'rentalVacancy'], label: 'Vacancy rates' },
+];
+
+/**
+ * Publication rules for sources whose calendar we cannot read.
+ *
+ * These are the agencies' long-standing schedules, not scraped data. They are
+ * ESTIMATES and the UI says so; the point is to flag an overdue series, not to
+ * promise a date.
+ */
+const RELEASE_RULES = {
+  bls_employment: { cadence: 'monthly', rule: 'First Friday of the month after the reference month', lagDays: 38, series: ['unemploymentRate', 'residentialConstructionJobs', 'residentialTradeJobs', 'constructionJobs', 'totalNonfarm'] },
+  bls_cpi:        { cadence: 'monthly', rule: 'Mid-month, about the 13th, for the prior month',      lagDays: 44, series: ['cpiShelter'] },
+  freddie_pmms:   { cadence: 'weekly',  rule: 'Thursdays',                                            lagDays: 7,  series: ['mortgage30yr'] },
+  umich:          { cadence: 'monthly', rule: 'Preliminary mid-month, final end of month',            lagDays: 45, series: ['consumerSentiment'] },
+  fed_g19:        { cadence: 'monthly', rule: 'About the fifth business day, two months in arrears',  lagDays: 68, series: ['revolvingCredit'] },
+  fed_delinq:     { cadence: 'quarterly', rule: 'About 8 weeks after quarter end',                    lagDays: 130, series: ['creditCardDelinquency'] },
+  caseshiller:    { cadence: 'monthly', rule: 'Last Tuesday, two months in arrears',                  lagDays: 88, series: ['caseShiller'] },
+  redfin:         { cadence: 'monthly', rule: 'Mid-month for the prior month',                        lagDays: 50, series: Object.keys({ medianSalePrice: 1, monthsOfSupply: 1, inventory: 1, priceDrops: 1 }) },
+};
+
+/**
+ * Freshness per series: how old the newest observation is, and whether that
+ * exceeds what the publication schedule would imply. This is entirely
+ * data-derived — no external calendar needed — and it is the check that actually
+ * matters: a series that has stopped updating is invisible otherwise, because a
+ * stale chart looks exactly like a flat one.
+ */
+function computeFreshness(bundle) {
+  const out = {};
+  const now = Date.now();
+  const ruleFor = (name) => Object.values(RELEASE_RULES).find((r) => r.series.includes(name));
+  for (const [group, series] of Object.entries(bundle)) {
+    for (const [name, pts] of Object.entries(series || {})) {
+      if (!Array.isArray(pts) || !pts.length) { out[name] = { group, ok: false }; continue; }
+      const last = pts[pts.length - 1];
+      const ageDays = Math.round((now - new Date(last.date + 'T00:00:00Z').getTime()) / 86_400_000);
+      const rule = ruleFor(name);
+      const expected = rule ? rule.lagDays : 75;
+      out[name] = {
+        group,
+        ok: true,
+        latest: last.date,
+        latestValue: last.value,
+        ageDays,
+        expectedMaxAgeDays: expected,
+        overdue: ageDays > expected + 10,
+        cadence: rule?.cadence || 'monthly',
+        rule: rule?.rule || null,
+      };
+    }
+  }
+  return out;
 }
 
 // ------------------------------------------------------- mirrors / checks ---
@@ -575,7 +704,7 @@ function crossCheck(primary, mirrors) {
 }
 
 // ------------------------------------------------------------------- main ---
-const [census, bls, fred, redfin, , mirrors] = await Promise.all([
+const [census, bls, fred, redfin, calendarEvents, mirrors] = await Promise.all([
   doCensus(), doBls(), doFred(), doRedfin(), doCalendar(), doMirrors(),
 ]);
 
@@ -658,6 +787,35 @@ manifest.crossChecks = Object.fromEntries(Object.entries(checks).map(([k, c]) =>
 manifest.filledFromMirror = filledFrom;
 write('manifest', manifest);
 write('mirrors', { series: mirrors, generatedAt: report.generatedAt });
+
+// ---- release calendar + per-series freshness -------------------------------
+const nowIso = new Date().toISOString().slice(0, 10);
+const allEvents = calendarEvents || [];
+const tagged = allEvents.map((e) => {
+  const hit = RELEASE_MAP.find((m) => m.match.test(e.title));
+  return { ...e, indicators: hit?.indicators || [], affects: hit?.label || null, tracked: Boolean(hit) };
+});
+const freshness = computeFreshness({ census: censusOut, bls, fred, redfin });
+
+write('calendar', {
+  generatedAt: report.generatedAt,
+  // Published dates, from the agency's own listing.
+  upcoming: tagged.filter((e) => e.date >= nowIso).slice(0, 60),
+  recent: tagged.filter((e) => e.date < nowIso).slice(-30).reverse(),
+  // Schedules we could not read, stated as rules rather than dates.
+  derivedRules: RELEASE_RULES,
+  freshness,
+  notes: {
+    census: 'Published dates, parsed from the Census economic-indicator calendar.',
+    bls: 'BLS returns 403 to identified automated clients and its robots.txt is likewise unavailable, so its calendar is not read. BLS-backed series show a derived cadence instead.',
+  },
+});
+report.freshness = freshness;
+const overdue = Object.entries(freshness).filter(([, f]) => f.overdue);
+if (overdue.length) {
+  console.log('\nOVERDUE SERIES (older than the publication schedule implies):');
+  for (const [k, f] of overdue) console.log(`  ${k}: latest ${f.latest}, ${f.ageDays}d old (expected <= ${f.expectedMaxAgeDays}d)`);
+}
 writeFileSync(join(ROOT, 'data-report.json'), JSON.stringify(report, null, 2), 'utf8');
 
 console.log(JSON.stringify(manifest, null, 2));

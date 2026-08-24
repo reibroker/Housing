@@ -326,6 +326,26 @@ const SNAP = {
     revolvingCredit: snapSeries(1351), creditCardDelinquency: snapSeries(3),
     caseShiller: snapSeries(330), existingHomeSales: snapSeries(4100000),
   }},
+  calendar: {
+    generatedAt: new Date().toISOString(),
+    upcoming: [
+      { title: 'New Residential Construction', url: 'https://www.census.gov/construction/nrc/', releaseAt: '2026-09-17T08:30:00-05:00',
+        date: '2026-09-17', time: '8:30 AM', referencePeriod: 'August 2026', source: 'Census',
+        indicators: ['permitsTotal', 'startsTotal'], affects: 'Permits, starts, completions', tracked: true },
+      { title: 'Advance Retail Sales', releaseAt: '2026-09-15T08:30:00-05:00', date: '2026-09-15', time: '8:30 AM',
+        referencePeriod: 'August 2026', source: 'Census', indicators: [], affects: null, tracked: false },
+    ],
+    recent: [
+      { title: 'New Residential Sales', releaseAt: '2026-08-25T10:00:00-05:00', date: '2026-08-25', time: '10:00 AM',
+        referencePeriod: 'July 2026', source: 'Census', indicators: ['newHomeSales'], affects: "New-home sales and months' supply", tracked: true },
+    ],
+    derivedRules: {},
+    freshness: {
+      monthsOfSupply: { group: 'redfin', ok: true, latest: '2026-05-01', latestValue: 3.36, ageDays: 60, expectedMaxAgeDays: 50, overdue: true, cadence: 'monthly', rule: 'Mid-month for the prior month' },
+      unemploymentRate: { group: 'bls', ok: true, latest: '2026-07-01', latestValue: 4.1, ageDays: 30, expectedMaxAgeDays: 38, overdue: false, cadence: 'monthly', rule: 'First Friday' },
+    },
+    notes: { census: 'Published dates.', bls: 'BLS refuses automated clients; derived cadence shown.' },
+  },
   redfin: { generatedAt: new Date().toISOString(), series: {
     medianSalePrice: snapSeries(400000), medianSalePriceYoY: snapSeries(2),
     homesSold: snapSeries(420000), homesSoldYoY: snapSeries(-5),
@@ -366,6 +386,17 @@ for (const label of ['Inventory & demand', 'Construction & permits', 'Employment
   await snapPage.waitForTimeout(400);
   check(`snapshot tab "${label}" renders charts`, (await snapPage.locator('.recharts-surface').count()) > 0);
 }
+
+// Releases tab: scheduled dates, overdue detection, and the BLS-refusal note.
+await snapPage.getByRole('tab', { name: 'Releases' }).click();
+await snapPage.waitForTimeout(600);
+const relText = await snapPage.locator('.app').innerText();
+check('releases tab lists a tracked upcoming release', /New Residential Construction/.test(relText));
+check('releases tab excludes untracked releases from the main table',
+  !/Advance Retail Sales/.test(relText.split('Freshness by series')[0]));
+check('releases tab flags an overdue series', (await snapPage.locator('.badge.err', { hasText: 'overdue' }).count()) > 0);
+check('releases tab marks a current series', (await snapPage.locator('.badge.ok', { hasText: 'current' }).count()) > 0);
+check('releases tab states why BLS dates are derived', /BLS refuses automated clients/.test(relText));
 await snapPage.getByRole('tab', { name: 'Overview' }).click();
 await snapPage.waitForTimeout(600);
 await snapPage.screenshot({ path: 'smoke-snapshot.png', fullPage: false });

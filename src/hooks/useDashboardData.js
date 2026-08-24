@@ -41,6 +41,7 @@ export default function useDashboardData({ stateFips = null, stateCode = null, m
   const [fred, setFred] = useState(emptySource);
   const [redfin, setRedfin] = useState(emptySource);
   const [redfinProgress, setRedfinProgress] = useState(null);
+  const [calendar, setCalendar] = useState(null);
 
   // Guards against a slow response from a previous state selection landing
   // after a newer one and overwriting it.
@@ -96,6 +97,7 @@ export default function useDashboardData({ stateFips = null, stateCode = null, m
         put(setBls, 'bls');
         put(setFred, 'fred');
         put(setRedfin, 'redfin');
+        setCalendar(snap.calendar);
       } catch (e) {
         if (generation.current !== gen) return;
         // A missing or unreadable manifest is one failure, not four -- report it
@@ -188,6 +190,7 @@ export default function useDashboardData({ stateFips = null, stateCode = null, m
   return {
     demo,
     mode,
+    calendar,
     census,
     bls,
     fred,
