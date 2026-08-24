@@ -405,13 +405,159 @@ async function doCalendar() {
   return null;
 }
 
+
+// ------------------------------------------------------- mirrors / checks ---
+/**
+ * Independent second source, used two ways: to CROSS-CHECK the primary feeds,
+ * and to FILL IN for them when a primary is unavailable.
+ *
+ * FRED republishes the same underlying releases the Census and BLS APIs serve —
+ * housing starts, permits, new-home sales and months' supply come from the
+ * Census New Residential Construction and New Home Sales releases; the labour
+ * series come from BLS. Reading them by a second, independent path is a real
+ * validity check: if our Census parse and FRED's copy of the same release
+ * disagree on the latest value, the parse is wrong, not the economy.
+ *
+ * It also removes the hard dependency on a Census API key. Every Census-sourced
+ * indicator in the risk model has a keyless FRED mirror, so the dashboard can
+ * reach full coverage with no key at all; a key then upgrades those panels to
+ * the primary source and turns the mirror into a check.
+ *
+ * Each entry lists CANDIDATE FRED ids because a few series have been renumbered
+ * over the years. The first that returns data wins, and the report records which
+ * one resolved — the same discover-at-runtime approach used for the Census codes,
+ * for the same reason: this sandbox cannot reach the API to confirm a guess.
+ */
+const MIRRORS = {
+  startsTotal:         { ids: ['HOUST'],                    unit: 'thousands, SAAR', primary: 'census' },
+  startsSingle:        { ids: ['HOUST1F'],                  unit: 'thousands, SAAR', primary: 'census' },
+  permitsTotal:        { ids: ['PERMIT'],                   unit: 'thousands, SAAR', primary: 'census' },
+  permitsSingle:       { ids: ['PERMIT1'],                  unit: 'thousands, SAAR', primary: 'census' },
+  underConstruction:   { ids: ['UNDCONTSA'],                unit: 'thousands, SA',   primary: 'census' },
+  completions:         { ids: ['COMPUTSA'],                 unit: 'thousands, SAAR', primary: 'census' },
+  newHomeSales:        { ids: ['HSN1F'],                    unit: 'thousands, SAAR', primary: 'census' },
+  newHomeMonthsSupply: { ids: ['MSACSR'],                   unit: 'months',          primary: 'census' },
+  newHomesForSale:     { ids: ['HNFSEPUSSA', 'HNFSUSNSA'],  unit: 'thousands',       primary: 'census' },
+  homeownerVacancy:    { ids: ['RHVRUSQ156N'],              unit: 'percent',         primary: 'census' },
+  rentalVacancy:       { ids: ['RRVRUSQ156N'],              unit: 'percent',         primary: 'census' },
+  unemploymentRate:    { ids: ['UNRATE'],                   unit: 'percent',         primary: 'bls' },
+  totalNonfarm:        { ids: ['PAYEMS'],                   unit: 'thousands',       primary: 'bls' },
+  constructionJobs:    { ids: ['USCONS'],                   unit: 'thousands',       primary: 'bls' },
+};
+
+async function fetchFredCsv(id, cosd) {
+  const { data } = await get(`https://fred.stlouisfed.org/graph/fredgraph.csv?id=${id}&cosd=${cosd}`, { as: 'text' });
+  if (/<html/i.test(data.slice(0, 200))) throw new Error(`FRED returned HTML for ${id} (unknown or discontinued series).`);
+  const { header, rows } = parseCsv(data);
+  const dateCol = header.find((h) => /^(observation_date|DATE)$/i.test(h)) || header[0];
+  const valCol = header.find((h) => h !== dateCol) || id;
+  const pts = rows
+    .map((r) => ({ date: String(r[dateCol] || '').slice(0, 10), value: num(r[valCol]) }))
+    .filter((p) => /^\d{4}-\d{2}-\d{2}$/.test(p.date));
+  if (!pts.length) throw new Error(`No observations for ${id}.`);
+  return pts;
+}
+
+async function doMirrors() {
+  const info = { resolved: {}, failed: {} };
+  const start = new Date();
+  start.setFullYear(start.getFullYear() - HISTORY_YEARS);
+  const cosd = start.toISOString().slice(0, 10);
+
+  const out = {};
+  for (const [name, spec] of Object.entries(MIRRORS)) {
+    let got = null;
+    const tried = [];
+    for (const id of spec.ids) {
+      try {
+        got = { id, points: await fetchFredCsv(id, cosd) };
+        break;
+      } catch (e) {
+        tried.push(`${id}: ${e.message.slice(0, 90)}`);
+      }
+    }
+    if (got) {
+      out[name] = got.points;
+      info.resolved[name] = { id: got.id, n: got.points.length, last: got.points[got.points.length - 1] };
+    } else {
+      out[name] = null;
+      info.failed[name] = tried;
+    }
+  }
+  report.sources.mirrors = info;
+  return out;
+}
+
+/**
+ * Compare the primary feed against the mirror on the most recent date they
+ * share, and record the disagreement.
+ *
+ * Small differences are expected and benign: seasonal-adjustment vintages differ,
+ * and Census revises the previous two months with every release while FRED may
+ * be a few hours behind. A large gap means a parsing or units error, which is
+ * exactly the class of bug that produced the revolving-credit and BLS-year
+ * problems.
+ */
+function crossCheck(primary, mirrors) {
+  const checks = {};
+  for (const [name, spec] of Object.entries(MIRRORS)) {
+    const a = primary[spec.primary]?.[name];
+    const b = mirrors[name];
+    if (!a?.length || !b?.length) {
+      checks[name] = { status: a?.length ? 'mirror-missing' : b?.length ? 'primary-missing' : 'both-missing' };
+      continue;
+    }
+    const bByDate = new Map(b.map((p) => [p.date, p.value]));
+    const shared = [...a].reverse().find((p) => bByDate.has(p.date) && Number.isFinite(p.value));
+    if (!shared) { checks[name] = { status: 'no-shared-date', primaryLast: a[a.length - 1], mirrorLast: b[b.length - 1] }; continue; }
+    const mv = bByDate.get(shared.date);
+    const diffPct = mv === 0 ? null : ((shared.value - mv) / Math.abs(mv)) * 100;
+    checks[name] = {
+      status: diffPct === null ? 'unknown' : Math.abs(diffPct) <= 2 ? 'agree' : Math.abs(diffPct) <= 10 ? 'minor' : 'MISMATCH',
+      date: shared.date,
+      primary: shared.value,
+      mirror: mv,
+      diffPct: diffPct === null ? null : Number(diffPct.toFixed(2)),
+      mirrorId: MIRRORS[name].ids[0],
+    };
+  }
+  return checks;
+}
+
 // ------------------------------------------------------------------- main ---
-const [census, bls, fred, redfin] = await Promise.all([doCensus(), doBls(), doFred(), doRedfin(), doCalendar()]);
+const [census, bls, fred, redfin, , mirrors] = await Promise.all([
+  doCensus(), doBls(), doFred(), doRedfin(), doCalendar(), doMirrors(),
+]);
+
+// Validity check: primary vs independent second path.
+const checks = crossCheck({ census, bls }, mirrors || {});
+report.crossChecks = checks;
+const mismatches = Object.entries(checks).filter(([, c]) => c.status === 'MISMATCH');
+if (mismatches.length) {
+  console.log('\nCROSS-CHECK MISMATCHES (>10% apart — investigate):');
+  for (const [k, c] of mismatches) console.log(`  ${k}: primary ${c.primary} vs ${c.mirrorId} ${c.mirror} (${c.diffPct}%) on ${c.date}`);
+}
+
+// Fill gaps from the mirror. Census needs an API key; without one, every
+// Census-sourced indicator would be missing and the gauge would run at ~50%
+// coverage. The keyless FRED mirrors carry the same releases, so the dashboard
+// stays complete either way — and each filled series is labelled so nobody
+// mistakes a mirror for the primary source.
+const filledFrom = {};
+const censusOut = { ...(census || {}) };
+for (const [name, spec] of Object.entries(MIRRORS)) {
+  if (spec.primary !== 'census') continue;
+  if (!censusOut[name]?.length && mirrors?.[name]?.length) {
+    censusOut[name] = mirrors[name];
+    filledFrom[name] = MIRRORS[name].ids[0];
+  }
+}
+report.filledFromMirror = filledFrom;
 
 const write = (name, payload) =>
   writeFileSync(join(OUT, `${name}.json`), JSON.stringify(payload), 'utf8');
 
-write('census', { series: census, generatedAt: report.generatedAt });
+write('census', { series: Object.keys(censusOut).length ? censusOut : null, generatedAt: report.generatedAt, filledFromMirror: filledFrom });
 write('bls', { series: bls, generatedAt: report.generatedAt });
 write('fred', { series: fred, generatedAt: report.generatedAt });
 write('redfin', { series: redfin, generatedAt: report.generatedAt });
@@ -423,7 +569,10 @@ const manifest = {
     Object.entries(report.sources).map(([k, v]) => [k, { ok: Boolean(v.ok), error: v.error || null, cors: v.cors ?? null }])
   ),
 };
+manifest.crossChecks = Object.fromEntries(Object.entries(checks).map(([k, c]) => [k, c.status]));
+manifest.filledFromMirror = filledFrom;
 write('manifest', manifest);
+write('mirrors', { series: mirrors, generatedAt: report.generatedAt });
 writeFileSync(join(ROOT, 'data-report.json'), JSON.stringify(report, null, 2), 'utf8');
 
 console.log(JSON.stringify(manifest, null, 2));
