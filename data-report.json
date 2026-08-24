@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-24T20:33:04.204Z",
+  "generatedAt": "2026-08-24T20:35:33.498Z",
   "node": "v20.20.2",
   "sources": {
     "census": {
@@ -114,83 +114,6 @@
         }
       }
     },
-    "bls": {
-      "ok": true,
-      "cors": "*",
-      "keyed": false,
-      "status": "REQUEST_SUCCEEDED",
-      "message": [],
-      "counts": {
-        "residentialConstructionJobs": 115,
-        "residentialTradeJobs": 115,
-        "constructionJobs": 115,
-        "totalNonfarm": 115,
-        "unemploymentRate": 115,
-        "cpiShelter": 115,
-        "stateUnemploymentRate": 0
-      }
-    },
-    "calendar": {
-      "userAgent": "HousingMarketDashboard/1.0 (+https://github.com/reibroker/Housing; public data, hourly)",
-      "robots": {
-        "https://www.bls.gov": {
-          "allowed": null,
-          "error": "HTTP 403 Forbidden — Access Denied \n \n   \n    .centerDiv\n    {\n      width: 60%;\n      height:200px;\n      margin: 0 aut"
-        },
-        "https://www.census.gov": {
-          "allowed": true,
-          "matchedRule": null,
-          "rules": 1
-        }
-      },
-      "probes": {
-        "bls_ics": {
-          "ok": false,
-          "error": "HTTP 403 Forbidden — Access Denied \n \n   \n    .centerDiv\n    {\n      width: 60%;\n      height:200px;\n      margin: 0 auto;\n      background-color:#FFFFFF ;\n    }\n   \n \n \n                    Bureau of Labor Statistics  \n  "
-        },
-        "bls_sched_26": {
-          "ok": false,
-          "error": "HTTP 403 Forbidden — Access Denied \n \n   \n    .centerDiv\n    {\n      width: 60%;\n      height:200px;\n      margin: 0 auto;\n      background-color:#FFFFFF ;\n    }\n   \n \n \n                    Bureau of Labor Statistics  \n  "
-        },
-        "bls_sched_27": {
-          "ok": false,
-          "error": "HTTP 403 Forbidden — Access Denied \n \n   \n    .centerDiv\n    {\n      width: 60%;\n      height:200px;\n      margin: 0 auto;\n      background-color:#FFFFFF ;\n    }\n   \n \n \n                    Bureau of Labor Statistics  \n  "
-        },
-        "census_list": {
-          "ok": true,
-          "cors": null,
-          "bytes": 91749,
-          "kind": "html",
-          "vevents": 0,
-          "sampleEvent": null,
-          "htmlRowSample": [
-            "<tr height=\"20\"> <td height=\"20\"><a href=\"/manufacturing/m3/\">Full Report - Manufacturers' Shipments, Inventories and Orders</a></td> <td sorttable_customkey=\"202601071000\">January 7, 2026</td> <td>10:00 AM</td> <td>October 2025</td> <td class=\"hiden\">A202601071000</td> <td class=\"hiden\">A202510</td> </tr>",
-            "<tr height=\"20\"> <td height=\"20\"><a href=\"/foreign-trade/\">U.S. International Trade in Goods and Services</a></td> <td sorttable_customkey=\"202601080830\">January 8, 2026</td> <td>8:30 AM</td> <td>October 2025</td> <td class=\"hiden\">A202601080830</td> <td class=\"hiden\">A202510</td> </tr>",
-            "<tr height=\"20\"> <td height=\"20\"><a href=\"/wholesale/index.html\">Monthly Wholesale Trade: Sales and Inventories</a></td> <td sorttable_customkey=\"202601081000\">January 8, 2026</td> <td>10:00 AM</td> <td>October 2025</td> <td class=\"hiden\">A202601081000</td> <td class=\"hiden\">A202510</td> </tr>"
-          ]
-        },
-        "census_ics": {
-          "ok": true,
-          "cors": null,
-          "bytes": 76530,
-          "kind": "html",
-          "vevents": 0,
-          "sampleEvent": null,
-          "htmlRowSample": []
-        },
-        "census_json": {
-          "ok": true,
-          "cors": null,
-          "bytes": 76530,
-          "kind": "html",
-          "vevents": 0,
-          "sampleEvent": null,
-          "htmlRowSample": []
-        }
-      },
-      "parsed": 169,
-      "ok": true
-    },
     "fred": {
       "ok": true,
       "cors": null,
@@ -268,6 +191,83 @@
           }
         }
       }
+    },
+    "bls": {
+      "ok": true,
+      "cors": "*",
+      "keyed": false,
+      "status": "REQUEST_SUCCEEDED",
+      "message": [],
+      "counts": {
+        "residentialConstructionJobs": 115,
+        "residentialTradeJobs": 115,
+        "constructionJobs": 115,
+        "totalNonfarm": 115,
+        "unemploymentRate": 115,
+        "cpiShelter": 115,
+        "stateUnemploymentRate": 0
+      }
+    },
+    "calendar": {
+      "userAgent": "HousingMarketDashboard/1.0 (+https://github.com/reibroker/Housing; public data, hourly)",
+      "robots": {
+        "https://www.bls.gov": {
+          "allowed": null,
+          "error": "HTTP 403 Forbidden — Access Denied \n \n   \n    .centerDiv\n    {\n      width: 60%;\n      height:200px;\n      margin: 0 aut"
+        },
+        "https://www.census.gov": {
+          "allowed": true,
+          "matchedRule": null,
+          "rules": 1
+        }
+      },
+      "probes": {
+        "bls_ics": {
+          "ok": false,
+          "error": "HTTP 403 Forbidden — Access Denied \n \n   \n    .centerDiv\n    {\n      width: 60%;\n      height:200px;\n      margin: 0 auto;\n      background-color:#FFFFFF ;\n    }\n   \n \n \n                    Bureau of Labor Statistics  \n  "
+        },
+        "bls_sched_26": {
+          "ok": false,
+          "error": "HTTP 403 Forbidden — Access Denied \n \n   \n    .centerDiv\n    {\n      width: 60%;\n      height:200px;\n      margin: 0 auto;\n      background-color:#FFFFFF ;\n    }\n   \n \n \n                    Bureau of Labor Statistics  \n  "
+        },
+        "bls_sched_27": {
+          "ok": false,
+          "error": "HTTP 403 Forbidden — Access Denied \n \n   \n    .centerDiv\n    {\n      width: 60%;\n      height:200px;\n      margin: 0 auto;\n      background-color:#FFFFFF ;\n    }\n   \n \n \n                    Bureau of Labor Statistics  \n  "
+        },
+        "census_list": {
+          "ok": true,
+          "cors": null,
+          "bytes": 91749,
+          "kind": "html",
+          "vevents": 0,
+          "sampleEvent": null,
+          "htmlRowSample": [
+            "<tr height=\"20\"> <td height=\"20\"><a href=\"/manufacturing/m3/\">Full Report - Manufacturers' Shipments, Inventories and Orders</a></td> <td sorttable_customkey=\"202601071000\">January 7, 2026</td> <td>10:00 AM</td> <td>October 2025</td> <td class=\"hiden\">A202601071000</td> <td class=\"hiden\">A202510</td> </tr>",
+            "<tr height=\"20\"> <td height=\"20\"><a href=\"/foreign-trade/\">U.S. International Trade in Goods and Services</a></td> <td sorttable_customkey=\"202601080830\">January 8, 2026</td> <td>8:30 AM</td> <td>October 2025</td> <td class=\"hiden\">A202601080830</td> <td class=\"hiden\">A202510</td> </tr>",
+            "<tr height=\"20\"> <td height=\"20\"><a href=\"/wholesale/index.html\">Monthly Wholesale Trade: Sales and Inventories</a></td> <td sorttable_customkey=\"202601081000\">January 8, 2026</td> <td>10:00 AM</td> <td>October 2025</td> <td class=\"hiden\">A202601081000</td> <td class=\"hiden\">A202510</td> </tr>"
+          ]
+        },
+        "census_ics": {
+          "ok": true,
+          "cors": null,
+          "bytes": 76530,
+          "kind": "html",
+          "vevents": 0,
+          "sampleEvent": null,
+          "htmlRowSample": []
+        },
+        "census_json": {
+          "ok": true,
+          "cors": null,
+          "bytes": 76530,
+          "kind": "html",
+          "vevents": 0,
+          "sampleEvent": null,
+          "htmlRowSample": []
+        }
+      },
+      "parsed": 169,
+      "ok": true
     },
     "mirrors": {
       "resolved": {
@@ -466,7 +466,8 @@
       "latest": "2026-07-01",
       "latestValue": 1239,
       "ageDays": 55,
-      "expectedMaxAgeDays": 75,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
       "overdue": false,
       "cadence": "monthly",
       "rule": null
@@ -477,7 +478,8 @@
       "latest": "2026-07-01",
       "latestValue": 808,
       "ageDays": 55,
-      "expectedMaxAgeDays": 75,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
       "overdue": false,
       "cadence": "monthly",
       "rule": null
@@ -488,7 +490,8 @@
       "latest": "2026-07-01",
       "latestValue": 1443,
       "ageDays": 55,
-      "expectedMaxAgeDays": 75,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
       "overdue": false,
       "cadence": "monthly",
       "rule": null
@@ -499,7 +502,8 @@
       "latest": "2026-07-01",
       "latestValue": 894,
       "ageDays": 55,
-      "expectedMaxAgeDays": 75,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
       "overdue": false,
       "cadence": "monthly",
       "rule": null
@@ -510,7 +514,8 @@
       "latest": "2026-07-01",
       "latestValue": 1262,
       "ageDays": 55,
-      "expectedMaxAgeDays": 75,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
       "overdue": false,
       "cadence": "monthly",
       "rule": null
@@ -521,7 +526,8 @@
       "latest": "2026-07-01",
       "latestValue": 1212,
       "ageDays": 55,
-      "expectedMaxAgeDays": 75,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
       "overdue": false,
       "cadence": "monthly",
       "rule": null
@@ -532,7 +538,8 @@
       "latest": "2026-06-01",
       "latestValue": 628,
       "ageDays": 85,
-      "expectedMaxAgeDays": 75,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
       "overdue": false,
       "cadence": "monthly",
       "rule": null
@@ -543,7 +550,8 @@
       "latest": "2026-06-01",
       "latestValue": 9.3,
       "ageDays": 85,
-      "expectedMaxAgeDays": 75,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
       "overdue": false,
       "cadence": "monthly",
       "rule": null
@@ -554,7 +562,8 @@
       "latest": "2026-06-01",
       "latestValue": 485,
       "ageDays": 85,
-      "expectedMaxAgeDays": 75,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
       "overdue": false,
       "cadence": "monthly",
       "rule": null
@@ -565,9 +574,10 @@
       "latest": "2026-04-01",
       "latestValue": 1.2,
       "ageDays": 146,
-      "expectedMaxAgeDays": 75,
-      "overdue": true,
-      "cadence": "monthly",
+      "intervalDays": 92,
+      "expectedMaxAgeDays": 276,
+      "overdue": false,
+      "cadence": "quarterly",
       "rule": null
     },
     "rentalVacancy": {
@@ -576,9 +586,10 @@
       "latest": "2026-04-01",
       "latestValue": 7.3,
       "ageDays": 146,
-      "expectedMaxAgeDays": 75,
-      "overdue": true,
-      "cadence": "monthly",
+      "intervalDays": 92,
+      "expectedMaxAgeDays": 276,
+      "overdue": false,
+      "cadence": "quarterly",
       "rule": null
     },
     "residentialConstructionJobs": {
@@ -587,8 +598,9 @@
       "latest": "2026-07-01",
       "latestValue": 914.6,
       "ageDays": 55,
-      "expectedMaxAgeDays": 38,
-      "overdue": true,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
+      "overdue": false,
       "cadence": "monthly",
       "rule": "First Friday of the month after the reference month"
     },
@@ -598,8 +610,9 @@
       "latest": "2026-07-01",
       "latestValue": 5271.2,
       "ageDays": 55,
-      "expectedMaxAgeDays": 38,
-      "overdue": true,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
+      "overdue": false,
       "cadence": "monthly",
       "rule": "First Friday of the month after the reference month"
     },
@@ -609,8 +622,9 @@
       "latest": "2026-07-01",
       "latestValue": 8343,
       "ageDays": 55,
-      "expectedMaxAgeDays": 38,
-      "overdue": true,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
+      "overdue": false,
       "cadence": "monthly",
       "rule": "First Friday of the month after the reference month"
     },
@@ -620,8 +634,9 @@
       "latest": "2026-07-01",
       "latestValue": 158858,
       "ageDays": 55,
-      "expectedMaxAgeDays": 38,
-      "overdue": true,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
+      "overdue": false,
       "cadence": "monthly",
       "rule": "First Friday of the month after the reference month"
     },
@@ -631,8 +646,9 @@
       "latest": "2026-07-01",
       "latestValue": 4.1,
       "ageDays": 55,
-      "expectedMaxAgeDays": 38,
-      "overdue": true,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
+      "overdue": false,
       "cadence": "monthly",
       "rule": "First Friday of the month after the reference month"
     },
@@ -642,8 +658,9 @@
       "latest": "2026-07-01",
       "latestValue": 429.095,
       "ageDays": 55,
-      "expectedMaxAgeDays": 44,
-      "overdue": true,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
+      "overdue": false,
       "cadence": "monthly",
       "rule": "Mid-month, about the 13th, for the prior month"
     },
@@ -657,7 +674,8 @@
       "latest": "2026-08-20",
       "latestValue": 6.65,
       "ageDays": 5,
-      "expectedMaxAgeDays": 7,
+      "intervalDays": 7,
+      "expectedMaxAgeDays": 45,
       "overdue": false,
       "cadence": "weekly",
       "rule": "Thursdays"
@@ -668,8 +686,9 @@
       "latest": "2026-06-01",
       "latestValue": 49.5,
       "ageDays": 85,
-      "expectedMaxAgeDays": 45,
-      "overdue": true,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
+      "overdue": false,
       "cadence": "monthly",
       "rule": "Preliminary mid-month, final end of month"
     },
@@ -679,8 +698,9 @@
       "latest": "2026-06-01",
       "latestValue": 1351.0691399999998,
       "ageDays": 85,
-      "expectedMaxAgeDays": 68,
-      "overdue": true,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
+      "overdue": false,
       "cadence": "monthly",
       "rule": "About the fifth business day, two months in arrears"
     },
@@ -690,8 +710,9 @@
       "latest": "2026-01-01",
       "latestValue": 2.92,
       "ageDays": 236,
-      "expectedMaxAgeDays": 130,
-      "overdue": true,
+      "intervalDays": 92,
+      "expectedMaxAgeDays": 276,
+      "overdue": false,
       "cadence": "quarterly",
       "rule": "About 8 weeks after quarter end"
     },
@@ -701,7 +722,8 @@
       "latest": "2026-05-01",
       "latestValue": 335.104,
       "ageDays": 116,
-      "expectedMaxAgeDays": 88,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
       "overdue": true,
       "cadence": "monthly",
       "rule": "Last Tuesday, two months in arrears"
@@ -712,7 +734,8 @@
       "latest": "2026-07-01",
       "latestValue": 4060000,
       "ageDays": 55,
-      "expectedMaxAgeDays": 75,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
       "overdue": false,
       "cadence": "monthly",
       "rule": null
@@ -723,7 +746,8 @@
       "latest": "2026-05-01",
       "latestValue": 440410.810237043,
       "ageDays": 116,
-      "expectedMaxAgeDays": 50,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
       "overdue": true,
       "cadence": "monthly",
       "rule": "Mid-month for the prior month"
@@ -734,7 +758,8 @@
       "latest": "2026-05-01",
       "latestValue": 2.2954688389999998,
       "ageDays": 116,
-      "expectedMaxAgeDays": 75,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
       "overdue": true,
       "cadence": "monthly",
       "rule": null
@@ -745,7 +770,8 @@
       "latest": "2026-05-01",
       "latestValue": 432014.72441824,
       "ageDays": 116,
-      "expectedMaxAgeDays": 75,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
       "overdue": true,
       "cadence": "monthly",
       "rule": null
@@ -756,7 +782,8 @@
       "latest": "2026-05-01",
       "latestValue": 0.5739396192,
       "ageDays": 116,
-      "expectedMaxAgeDays": 75,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
       "overdue": true,
       "cadence": "monthly",
       "rule": null
@@ -767,7 +794,8 @@
       "latest": "2026-05-01",
       "latestValue": 540196.67326278,
       "ageDays": 116,
-      "expectedMaxAgeDays": 75,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
       "overdue": true,
       "cadence": "monthly",
       "rule": null
@@ -778,7 +806,8 @@
       "latest": "2026-05-01",
       "latestValue": 1397071.40811108,
       "ageDays": 116,
-      "expectedMaxAgeDays": 50,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
       "overdue": true,
       "cadence": "monthly",
       "rule": "Mid-month for the prior month"
@@ -789,7 +818,8 @@
       "latest": "2026-05-01",
       "latestValue": -9.141150772,
       "ageDays": 116,
-      "expectedMaxAgeDays": 75,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
       "overdue": true,
       "cadence": "monthly",
       "rule": null
@@ -800,7 +830,8 @@
       "latest": "2026-05-01",
       "latestValue": 3.362799658,
       "ageDays": 116,
-      "expectedMaxAgeDays": 50,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
       "overdue": true,
       "cadence": "monthly",
       "rule": "Mid-month for the prior month"
@@ -811,7 +842,8 @@
       "latest": "2026-05-01",
       "latestValue": 50.022834756,
       "ageDays": 116,
-      "expectedMaxAgeDays": 75,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
       "overdue": true,
       "cadence": "monthly",
       "rule": null
@@ -822,7 +854,8 @@
       "latest": "2026-05-01",
       "latestValue": 98.60065156,
       "ageDays": 116,
-      "expectedMaxAgeDays": 75,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
       "overdue": true,
       "cadence": "monthly",
       "rule": null
@@ -833,7 +866,8 @@
       "latest": "2026-05-01",
       "latestValue": 25.92082096,
       "ageDays": 116,
-      "expectedMaxAgeDays": 75,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
       "overdue": true,
       "cadence": "monthly",
       "rule": null
@@ -844,7 +878,8 @@
       "latest": "2026-05-01",
       "latestValue": 19.956237169999998,
       "ageDays": 116,
-      "expectedMaxAgeDays": 50,
+      "intervalDays": 31,
+      "expectedMaxAgeDays": 93,
       "overdue": true,
       "cadence": "monthly",
       "rule": "Mid-month for the prior month"
