@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-24T19:49:33.319Z",
+  "generatedAt": "2026-08-24T20:20:07.536Z",
   "node": "v20.20.2",
   "sources": {
     "census": {
@@ -10,6 +10,22 @@
       "unmatched": [],
       "allCodes": {},
       "error": "CENSUS_API_KEY not set — Census rejects every unkeyed request."
+    },
+    "bls": {
+      "ok": true,
+      "cors": "*",
+      "keyed": false,
+      "status": "REQUEST_SUCCEEDED",
+      "message": [],
+      "counts": {
+        "residentialConstructionJobs": 115,
+        "residentialTradeJobs": 115,
+        "constructionJobs": 115,
+        "totalNonfarm": 115,
+        "unemploymentRate": 115,
+        "cpiShelter": 115,
+        "stateUnemploymentRate": 0
+      }
     },
     "redfin": {
       "ok": true,
@@ -112,22 +128,6 @@
           "date": "2026-05-01",
           "value": 19.956237169999998
         }
-      }
-    },
-    "bls": {
-      "ok": true,
-      "cors": "*",
-      "keyed": false,
-      "status": "REQUEST_SUCCEEDED",
-      "message": [],
-      "counts": {
-        "residentialConstructionJobs": 115,
-        "residentialTradeJobs": 115,
-        "constructionJobs": 115,
-        "totalNonfarm": 115,
-        "unemploymentRate": 115,
-        "cpiShelter": 115,
-        "stateUnemploymentRate": 0
       }
     },
     "calendar": {
@@ -239,6 +239,195 @@
           }
         }
       }
+    },
+    "mirrors": {
+      "resolved": {
+        "startsTotal": {
+          "id": "HOUST",
+          "n": 144,
+          "last": {
+            "date": "2026-07-01",
+            "value": 1239
+          }
+        },
+        "startsSingle": {
+          "id": "HOUST1F",
+          "n": 144,
+          "last": {
+            "date": "2026-07-01",
+            "value": 808
+          }
+        },
+        "permitsTotal": {
+          "id": "PERMIT",
+          "n": 144,
+          "last": {
+            "date": "2026-07-01",
+            "value": 1443
+          }
+        },
+        "permitsSingle": {
+          "id": "PERMIT1",
+          "n": 144,
+          "last": {
+            "date": "2026-07-01",
+            "value": 894
+          }
+        },
+        "underConstruction": {
+          "id": "UNDCONTSA",
+          "n": 144,
+          "last": {
+            "date": "2026-07-01",
+            "value": 1262
+          }
+        },
+        "completions": {
+          "id": "COMPUTSA",
+          "n": 144,
+          "last": {
+            "date": "2026-07-01",
+            "value": 1212
+          }
+        },
+        "newHomeSales": {
+          "id": "HSN1F",
+          "n": 143,
+          "last": {
+            "date": "2026-06-01",
+            "value": 628
+          }
+        },
+        "newHomeMonthsSupply": {
+          "id": "MSACSR",
+          "n": 143,
+          "last": {
+            "date": "2026-06-01",
+            "value": 9.3
+          }
+        },
+        "newHomesForSale": {
+          "id": "HNFSEPUSSA",
+          "n": 143,
+          "last": {
+            "date": "2026-06-01",
+            "value": 485
+          }
+        },
+        "homeownerVacancy": {
+          "id": "RHVRUSQ156N",
+          "n": 48,
+          "last": {
+            "date": "2026-04-01",
+            "value": 1.2
+          }
+        },
+        "rentalVacancy": {
+          "id": "RRVRUSQ156N",
+          "n": 48,
+          "last": {
+            "date": "2026-04-01",
+            "value": 7.3
+          }
+        },
+        "unemploymentRate": {
+          "id": "UNRATE",
+          "n": 144,
+          "last": {
+            "date": "2026-07-01",
+            "value": 4.1
+          }
+        },
+        "totalNonfarm": {
+          "id": "PAYEMS",
+          "n": 144,
+          "last": {
+            "date": "2026-07-01",
+            "value": 158858
+          }
+        },
+        "constructionJobs": {
+          "id": "USCONS",
+          "n": 144,
+          "last": {
+            "date": "2026-07-01",
+            "value": 8343
+          }
+        }
+      },
+      "failed": {}
     }
+  },
+  "crossChecks": {
+    "startsTotal": {
+      "status": "primary-missing"
+    },
+    "startsSingle": {
+      "status": "primary-missing"
+    },
+    "permitsTotal": {
+      "status": "primary-missing"
+    },
+    "permitsSingle": {
+      "status": "primary-missing"
+    },
+    "underConstruction": {
+      "status": "primary-missing"
+    },
+    "completions": {
+      "status": "primary-missing"
+    },
+    "newHomeSales": {
+      "status": "primary-missing"
+    },
+    "newHomeMonthsSupply": {
+      "status": "primary-missing"
+    },
+    "newHomesForSale": {
+      "status": "primary-missing"
+    },
+    "homeownerVacancy": {
+      "status": "primary-missing"
+    },
+    "rentalVacancy": {
+      "status": "primary-missing"
+    },
+    "unemploymentRate": {
+      "status": "agree",
+      "date": "2026-07-01",
+      "primary": 4.1,
+      "mirror": 4.1,
+      "diffPct": 0,
+      "mirrorId": "UNRATE"
+    },
+    "totalNonfarm": {
+      "status": "agree",
+      "date": "2026-07-01",
+      "primary": 158858,
+      "mirror": 158858,
+      "diffPct": 0,
+      "mirrorId": "PAYEMS"
+    },
+    "constructionJobs": {
+      "status": "agree",
+      "date": "2026-07-01",
+      "primary": 8343,
+      "mirror": 8343,
+      "diffPct": 0,
+      "mirrorId": "USCONS"
+    }
+  },
+  "filledFromMirror": {
+    "startsTotal": "HOUST",
+    "startsSingle": "HOUST1F",
+    "permitsTotal": "PERMIT",
+    "permitsSingle": "PERMIT1",
+    "underConstruction": "UNDCONTSA",
+    "completions": "COMPUTSA",
+    "newHomeSales": "HSN1F",
+    "newHomeMonthsSupply": "MSACSR",
+    "newHomesForSale": "HNFSEPUSSA",
+    "homeownerVacancy": "RHVRUSQ156N",
+    "rentalVacancy": "RRVRUSQ156N"
   }
 }
