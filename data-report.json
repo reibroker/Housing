@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-24T20:37:19.839Z",
+  "generatedAt": "2026-08-24T20:38:54.695Z",
   "node": "v20.20.2",
   "sources": {
     "census": {
@@ -425,6 +425,109 @@
       "durations": [
         null
       ]
+    }
+  },
+  "resaleSubstitutes": {
+    "activeListings": {
+      "id": "ACTLISCOUUS",
+      "n": 121,
+      "first": {
+        "date": "2016-07-01",
+        "value": 1463025
+      },
+      "last": {
+        "date": "2026-07-01",
+        "value": 1126252
+      }
+    },
+    "newListings": {
+      "id": "NEWLISCOUUS",
+      "n": 121,
+      "first": {
+        "date": "2016-07-01",
+        "value": 527576
+      },
+      "last": {
+        "date": "2026-07-01",
+        "value": 423732
+      }
+    },
+    "medianDaysOnMarket": {
+      "id": "MEDDAYONMARUS",
+      "n": 121,
+      "first": {
+        "date": "2016-07-01",
+        "value": 64
+      },
+      "last": {
+        "date": "2026-07-01",
+        "value": 57
+      }
+    },
+    "priceReducedCount": {
+      "id": "PRIREDCOUUS",
+      "n": 121,
+      "first": {
+        "date": "2016-07-01",
+        "value": 418920
+      },
+      "last": {
+        "date": "2026-07-01",
+        "value": 404344
+      }
+    },
+    "medianListPrice": {
+      "id": "MEDLISPRIUS",
+      "n": 121,
+      "first": {
+        "date": "2016-07-01",
+        "value": 259000
+      },
+      "last": {
+        "date": "2026-07-01",
+        "value": 428950
+      }
+    },
+    "totalListings": {
+      "failed": [
+        "TOTLISCOUUS: HTTP 404 Not Found — Error - St. Louis Fed \r\n     \r\n         \r\n     \r\n     \r\n   "
+      ]
+    },
+    "existingMonthsSupply": {
+      "id": "HOSSUPUSM673N",
+      "n": 13,
+      "first": {
+        "date": "2025-07-01",
+        "value": 4.6
+      },
+      "last": {
+        "date": "2026-07-01",
+        "value": 4.6
+      }
+    },
+    "existingHomeSales": {
+      "id": "EXHOSLUSM495S",
+      "n": 13,
+      "first": {
+        "date": "2025-07-01",
+        "value": 4030000
+      },
+      "last": {
+        "date": "2026-07-01",
+        "value": 4060000
+      }
+    },
+    "pendingSales": {
+      "id": "HSN1FNSA",
+      "n": 143,
+      "first": {
+        "date": "2014-08-01",
+        "value": 36
+      },
+      "last": {
+        "date": "2026-06-01",
+        "value": 54
+      }
     }
   },
   "crossChecks": {
