@@ -287,8 +287,8 @@ async function doFred() {
 }
 
 // ---------------------------------------------------------------- Redfin ----
-const REDFIN_URL =
-  'https://redfin-public-data.s3.us-west-2.amazonaws.com/redfin_market_tracker/us_national_market_tracker.tsv000.gz';
+const REDFIN_BASE = 'https://redfin-public-data.s3.us-west-2.amazonaws.com/redfin_market_tracker';
+const REDFIN_URL = `${REDFIN_BASE}/us_national_market_tracker.tsv000.gz`;
 
 const REDFIN_COLS = ['period_begin','period_duration','region_type','region','state_code','property_type',
   'is_seasonally_adjusted','median_sale_price','median_sale_price_yoy','homes_sold','homes_sold_yoy',
@@ -349,6 +349,62 @@ async function doRedfin() {
   }
 }
 
+
+
+/**
+ * Diagnose Redfin's publication lag.
+ *
+ * The first full run had every Redfin series stopping at 2026-05 while Census and
+ * BLS were current to 2026-07. Redfin publishes monthly with a two-to-three week
+ * lag, so July should exist. Since Redfin supplies five of the fourteen model
+ * indicators and roughly 47% of the weight, a two-month lag on the primary file
+ * is worth resolving rather than tolerating.
+ *
+ * Two hypotheses: the national rollup is refreshed less often than the
+ * finer-grained files, or there is a more current file we are not reading. This
+ * checks Last-Modified on each candidate and reports the newest period each one
+ * actually contains, so the answer comes from the data rather than a guess.
+ */
+const REDFIN_CANDIDATES = [
+  { id: 'national',    url: `${REDFIN_BASE}/us_national_market_tracker.tsv000.gz` },
+  { id: 'state',       url: `${REDFIN_BASE}/state_market_tracker.tsv000.gz` },
+  { id: 'weekly',      url: 'https://redfin-public-data.s3.us-west-2.amazonaws.com/redfin_covid19/weekly_housing_market_data_most_recent.tsv000.gz' },
+];
+
+async function probeRedfinFreshness() {
+  const info = {};
+  for (const c of REDFIN_CANDIDATES) {
+    try {
+      const head = await fetch(c.url, { method: 'HEAD' });
+      const meta = {
+        status: head.status,
+        lastModified: head.headers.get('last-modified'),
+        bytes: head.headers.get('content-length'),
+      };
+      // Read just enough of the body to learn the newest period it carries.
+      if (head.ok && c.id !== 'state') {
+        const { res } = await get(c.url, { as: 'stream', timeoutMs: 240_000 });
+        const { rows } = await parseTsvStream(res.body, {
+          gzipped: true,
+          columns: ['period_begin', 'period_end', 'property_type', 'period_duration', 'region_type'],
+          filter: () => true,
+          maxRows: 400_000,
+        });
+        const periods = [...new Set(rows.map((r) => String(r.period_begin || '').slice(0, 7)).filter(Boolean))].sort();
+        meta.newestPeriod = periods[periods.length - 1] || null;
+        meta.oldestPeriod = periods[0] || null;
+        meta.distinctPeriods = periods.length;
+        meta.propertyTypes = [...new Set(rows.map((r) => r.property_type))].slice(0, 6);
+        meta.durations = [...new Set(rows.map((r) => r.period_duration))].slice(0, 6);
+      }
+      info[c.id] = meta;
+    } catch (e) {
+      info[c.id] = { error: e.message.slice(0, 180) };
+    }
+  }
+  report.redfinFreshnessProbe = info;
+  return info;
+}
 
 // -------------------------------------------------------------- calendar ----
 /**
@@ -738,6 +794,7 @@ function crossCheck(primary, mirrors) {
 const [census, bls, fred, redfin, calendarEvents, mirrors] = await Promise.all([
   doCensus(), doBls(), doFred(), doRedfin(), doCalendar(), doMirrors(),
 ]);
+await probeRedfinFreshness();
 
 // Validity check: primary vs independent second path.
 const checks = crossCheck({ census, bls }, mirrors || {});
