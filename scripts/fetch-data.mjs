@@ -790,11 +790,62 @@ function crossCheck(primary, mirrors) {
   return checks;
 }
 
+
+/**
+ * Candidate replacements for the stalled Redfin feed.
+ *
+ * Redfin's public S3 file carries last-modified 2026-06-02 and stops at the May
+ * period — their publication has stalled, which is not something we can fix from
+ * here. Since Redfin supplies five model indicators and about 47% of the weight,
+ * leaning on a three-month-old feed quietly degrades the whole gauge.
+ *
+ * Realtor.com publishes an equivalent monthly residential-listings series
+ * through FRED: active listings, new listings, days on market, price reductions
+ * and median list price, keyless and current. Between that and NAR's existing-home
+ * months' supply, every stalled Redfin indicator has a live counterpart.
+ *
+ * Probed rather than assumed — FRED ids get renumbered, and this sandbox cannot
+ * reach the API to confirm one.
+ */
+const RESALE_CANDIDATES = {
+  activeListings:     ['ACTLISCOUUS'],
+  newListings:        ['NEWLISCOUUS'],
+  medianDaysOnMarket: ['MEDDAYONMARUS'],
+  priceReducedCount:  ['PRIREDCOUUS'],
+  medianListPrice:    ['MEDLISPRIUS'],
+  totalListings:      ['TOTLISCOUUS'],
+  existingMonthsSupply: ['HOSSUPUSM673N'],
+  existingHomeSales:  ['EXHOSLUSM495S', 'HOSSLDUSM495S'],
+  pendingSales:       ['HSN1FNSA', 'PENSALEUS'],
+};
+
+async function probeResaleSubstitutes() {
+  const info = {};
+  const start = new Date();
+  start.setFullYear(start.getFullYear() - HISTORY_YEARS);
+  const cosd = start.toISOString().slice(0, 10);
+
+  for (const [name, ids] of Object.entries(RESALE_CANDIDATES)) {
+    for (const id of ids) {
+      try {
+        const pts = await fetchFredCsv(id, cosd);
+        info[name] = { id, n: pts.length, first: pts[0], last: pts[pts.length - 1] };
+        break;
+      } catch (e) {
+        info[name] = { failed: (info[name]?.failed || []).concat(`${id}: ${e.message.slice(0, 80)}`) };
+      }
+    }
+  }
+  report.resaleSubstitutes = info;
+  return info;
+}
+
 // ------------------------------------------------------------------- main ---
 const [census, bls, fred, redfin, calendarEvents, mirrors] = await Promise.all([
   doCensus(), doBls(), doFred(), doRedfin(), doCalendar(), doMirrors(),
 ]);
 await probeRedfinFreshness();
+await probeResaleSubstitutes();
 
 // Validity check: primary vs independent second path.
 const checks = crossCheck({ census, bls }, mirrors || {});
