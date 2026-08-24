@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-24T15:05:44.247Z",
+  "generatedAt": "2026-08-24T16:00:06.571Z",
   "node": "v20.20.2",
   "sources": {
     "census": {
@@ -130,38 +130,6 @@
         "stateUnemploymentRate": 0
       }
     },
-    "calendar": {
-      "probes": {
-        "bls_ics": {
-          "ok": false,
-          "error": "HTTP 403 Forbidden — Access Denied \n \n   \n    .centerDiv\n    {\n      width: 60%;\n      height:200px;\n      margin: 0 auto;\n      background-color:#FFFFFF ;\n    }\n   \n \n \n                    Bureau of "
-        },
-        "bls_schedule": {
-          "ok": false,
-          "error": "HTTP 403 Forbidden — Access Denied \n \n   \n    .centerDiv\n    {\n      width: 60%;\n      height:200px;\n      margin: 0 auto;\n      background-color:#FFFFFF ;\n    }\n   \n \n \n                    Bureau of "
-        },
-        "census_ics": {
-          "ok": true,
-          "cors": null,
-          "bytes": 76177,
-          "contentSniff": " <!DOCTYPE HTML> <html class=\"docSize\"> <head> <!-- Meta Tags --> <meta charset=\"utf-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1, user-scalable=no\"> <meta ",
-          "vevents": 0,
-          "sampleEvent": null
-        },
-        "census_cal": {
-          "ok": true,
-          "cors": null,
-          "bytes": 91396,
-          "contentSniff": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\"> <head> <meta http-equiv=\"Co",
-          "vevents": 0,
-          "sampleEvent": null
-        },
-        "fred_releases": {
-          "ok": false,
-          "error": "HTTP 400 Bad Request — {\"error_code\":400,\"error_message\":\"Bad Request.  The value for variable api_key is not a 32 character alpha-numeric lower-case string.  Read https:\\/\\/fred.stlouisfed.org\\/docs\\"
-        }
-      }
-    },
     "fred": {
       "ok": true,
       "cors": null,
@@ -237,6 +205,38 @@
             "date": "2026-07-01",
             "value": 4060000
           }
+        }
+      }
+    },
+    "calendar": {
+      "probes": {
+        "bls_ics": {
+          "ok": false,
+          "error": "HTTP 403 Forbidden — Access Denied \n \n   \n    .centerDiv\n    {\n      width: 60%;\n      height:200px;\n      margin: 0 auto;\n      background-color:#FFFFFF ;\n    }\n   \n \n \n                    Bureau of "
+        },
+        "bls_schedule": {
+          "ok": false,
+          "error": "HTTP 403 Forbidden — Access Denied \n \n   \n    .centerDiv\n    {\n      width: 60%;\n      height:200px;\n      margin: 0 auto;\n      background-color:#FFFFFF ;\n    }\n   \n \n \n                    Bureau of "
+        },
+        "census_ics": {
+          "ok": true,
+          "cors": null,
+          "bytes": 76177,
+          "contentSniff": " <!DOCTYPE HTML> <html class=\"docSize\"> <head> <!-- Meta Tags --> <meta charset=\"utf-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1, user-scalable=no\"> <meta ",
+          "vevents": 0,
+          "sampleEvent": null
+        },
+        "census_cal": {
+          "ok": true,
+          "cors": null,
+          "bytes": 91396,
+          "contentSniff": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\"> <head> <meta http-equiv=\"Co",
+          "vevents": 0,
+          "sampleEvent": null
+        },
+        "fred_releases": {
+          "ok": false,
+          "error": "HTTP 400 Bad Request — {\"error_code\":400,\"error_message\":\"Bad Request.  The value for variable api_key is not a 32 character alpha-numeric lower-case string.  Read https:\\/\\/fred.stlouisfed.org\\/docs\\"
         }
       }
     }
