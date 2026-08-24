@@ -840,12 +840,83 @@ async function probeResaleSubstitutes() {
   return info;
 }
 
+
+/**
+ * Realtor.com residential-listings series, via FRED — the live stand-in for the
+ * stalled Redfin feed.
+ *
+ * IMPORTANT: these are NOT drop-in equivalents of Redfin's columns. Redfin's
+ * `price_drops` is the share of listings that cut their asking price in the
+ * month; Realtor.com's price-reduced count divided by active listings is a
+ * stock, not a flow, and runs materially higher. Median LIST price is not median
+ * SALE price. The two sources are therefore kept as separate series with their
+ * own names, and the risk model carries separate thresholds for each — never
+ * assume a Redfin threshold transfers.
+ */
+async function doResale() {
+  const info = { resolved: {}, failed: {} };
+  const start = new Date();
+  start.setFullYear(start.getFullYear() - HISTORY_YEARS);
+  const cosd = start.toISOString().slice(0, 10);
+
+  const ids = {
+    activeListings: 'ACTLISCOUUS',
+    newListings: 'NEWLISCOUUS',
+    medianDaysOnMarket: 'MEDDAYONMARUS',
+    priceReducedCount: 'PRIREDCOUUS',
+    medianListPrice: 'MEDLISPRIUS',
+    existingMonthsSupply: 'HOSSUPUSM673N',
+    existingHomeSales: 'EXHOSLUSM495S',
+  };
+
+  const raw = {};
+  for (const [name, id] of Object.entries(ids)) {
+    try {
+      raw[name] = await fetchFredCsv(id, cosd);
+      info.resolved[name] = { id, n: raw[name].length, last: raw[name][raw[name].length - 1] };
+    } catch (e) {
+      raw[name] = null;
+      info.failed[name] = e.message.slice(0, 120);
+    }
+  }
+
+  // Price-reduced SHARE: the count is meaningless without the denominator, and
+  // the denominator only exists on dates both series cover.
+  if (raw.priceReducedCount && raw.activeListings) {
+    const active = new Map(raw.activeListings.map((p) => [p.date, p.value]));
+    raw.priceReducedShare = raw.priceReducedCount
+      .map((p) => {
+        const a = active.get(p.date);
+        return a && a > 0 && Number.isFinite(p.value) ? { date: p.date, value: (p.value / a) * 100 } : null;
+      })
+      .filter(Boolean);
+    info.resolved.priceReducedShare = { id: 'PRIREDCOUUS / ACTLISCOUUS', n: raw.priceReducedShare.length, last: raw.priceReducedShare[raw.priceReducedShare.length - 1] };
+  }
+
+  // Months of supply, derived where NAR's own series is too short to chart.
+  // EXHOSLUSM495S is a seasonally adjusted ANNUAL rate, so the monthly pace is
+  // that divided by twelve.
+  if (raw.activeListings && raw.existingHomeSales) {
+    const sales = new Map(raw.existingHomeSales.map((p) => [p.date, p.value]));
+    raw.derivedMonthsOfSupply = raw.activeListings
+      .map((p) => {
+        const s = sales.get(p.date);
+        return s && s > 0 ? { date: p.date, value: p.value / (s / 12) } : null;
+      })
+      .filter(Boolean);
+    info.resolved.derivedMonthsOfSupply = { id: 'ACTLISCOUUS / (EXHOSLUSM495S / 12)', n: raw.derivedMonthsOfSupply.length, last: raw.derivedMonthsOfSupply[raw.derivedMonthsOfSupply.length - 1] };
+  }
+
+  info.ok = Object.values(raw).some((v) => v?.length);
+  report.sources.resale = info;
+  return raw;
+}
+
 // ------------------------------------------------------------------- main ---
-const [census, bls, fred, redfin, calendarEvents, mirrors] = await Promise.all([
-  doCensus(), doBls(), doFred(), doRedfin(), doCalendar(), doMirrors(),
+const [census, bls, fred, redfin, calendarEvents, mirrors, resale] = await Promise.all([
+  doCensus(), doBls(), doFred(), doRedfin(), doCalendar(), doMirrors(), doResale(),
 ]);
 await probeRedfinFreshness();
-await probeResaleSubstitutes();
 
 // Validity check: primary vs independent second path.
 const checks = crossCheck({ census, bls }, mirrors || {});
@@ -879,6 +950,7 @@ write('census', { series: Object.keys(censusOut).length ? censusOut : null, gene
 write('bls', { series: bls, generatedAt: report.generatedAt });
 write('fred', { series: fred, generatedAt: report.generatedAt });
 write('redfin', { series: redfin, generatedAt: report.generatedAt });
+write('resale', { series: resale, generatedAt: report.generatedAt });
 
 // The manifest is what the UI reports as source status, so it must describe the
 // data that actually shipped -- not the raw fetch outcome. A Census fetch that
@@ -886,7 +958,7 @@ write('redfin', { series: redfin, generatedAt: report.generatedAt });
 // mirror, is a working panel sourced elsewhere; reporting it as "failed" next to
 // a chart full of data is worse than useless. `calendar` and `mirrors` are a
 // probe and a support layer, not user-facing sources, so they stay out.
-const DATA_SOURCES = ['census', 'bls', 'fred', 'redfin'];
+const DATA_SOURCES = ['census', 'bls', 'fred', 'redfin', 'resale'];
 const filledCount = Object.keys(filledFrom).length;
 
 const manifest = {
@@ -934,7 +1006,7 @@ const tagged = allEvents.map((e) => {
   const hit = RELEASE_MAP.find((m) => m.match.test(e.title));
   return { ...e, indicators: hit?.indicators || [], affects: hit?.label || null, tracked: Boolean(hit) };
 });
-const freshness = computeFreshness({ census: censusOut, bls, fred, redfin });
+const freshness = computeFreshness({ census: censusOut, bls, fred, redfin, resale });
 
 write('calendar', {
   generatedAt: report.generatedAt,

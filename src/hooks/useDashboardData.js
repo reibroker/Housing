@@ -42,6 +42,7 @@ export default function useDashboardData({ stateFips = null, stateCode = null, m
   const [redfin, setRedfin] = useState(emptySource);
   const [redfinProgress, setRedfinProgress] = useState(null);
   const [calendar, setCalendar] = useState(null);
+  const [resale, setResale] = useState(emptySource);
 
   // Guards against a slow response from a previous state selection landing
   // after a newer one and overwriting it.
@@ -97,6 +98,7 @@ export default function useDashboardData({ stateFips = null, stateCode = null, m
         put(setBls, 'bls');
         put(setFred, 'fred');
         put(setRedfin, 'redfin');
+        put(setResale, 'resale');
         setCalendar(snap.calendar);
       } catch (e) {
         if (generation.current !== gen) return;
@@ -183,7 +185,7 @@ export default function useDashboardData({ stateFips = null, stateCode = null, m
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stateFips, stateCode, demo, mode]);
 
-  const bundle = { census: census.data, bls: bls.data, fred: fred.data, redfin: redfin.data };
+  const bundle = { census: census.data, bls: bls.data, fred: fred.data, redfin: redfin.data, resale: resale.data };
   const risk = computeRiskScore(bundle);
   const riskHistory = historicalScore(bundle);
 
@@ -195,6 +197,7 @@ export default function useDashboardData({ stateFips = null, stateCode = null, m
     bls,
     fred,
     redfin,
+    resale,
     redfinProgress,
     bundle,
     risk,

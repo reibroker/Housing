@@ -50,6 +50,61 @@ const val = (s) => latest(s)?.value ?? null;
 const asOf = (s) => latest(s)?.date ?? null;
 
 /**
+ * A source is only usable if it is still publishing.
+ *
+ * Redfin's public feed stalled in June 2026 — last-modified 2026-06-02, newest
+ * period 2026-05 — while every other source stayed current. A stalled feed is
+ * the most dangerous kind of failure here, because it does not error: the charts
+ * render, the gauge computes, and the number is quietly three months old.
+ * Indicators that can fall back to a live source do so automatically, and say
+ * which one they used.
+ */
+const STALE_AFTER_DAYS = 75;
+
+function isFresh(series) {
+  const l = latest(series);
+  if (!l) return false;
+  return (Date.now() - new Date(`${l.date}T00:00:00Z`).getTime()) / 86_400_000 <= STALE_AFTER_DAYS;
+}
+
+/** Year-over-year percent change of a level series, as its own series. */
+function yoyOf(series, periods = 12) {
+  if (!series?.length) return null;
+  return series.map((p, i) => {
+    const prior = series[i - periods];
+    return {
+      date: p.date,
+      value:
+        prior && Number.isFinite(prior.value) && Number.isFinite(p.value) && prior.value !== 0
+          ? ((p.value - prior.value) / Math.abs(prior.value)) * 100
+          : null,
+    };
+  });
+}
+
+/**
+ * Pick the first source that is both present and fresh, falling back to the
+ * first present one if none are fresh (better a flagged stale number than a
+ * hole). Each option carries its OWN thresholds: Redfin's price-drop share is a
+ * monthly flow, Realtor.com's price-reduced share is a stock, and they sit on
+ * different scales — reusing one source's calibration on another's series would
+ * silently produce a wrong sub-score.
+ */
+function pickSource(options) {
+  const present = options.filter((o) => o.series?.length && Number.isFinite(latest(o.series)?.value));
+  if (!present.length) return null;
+  const chosen = present.find((o) => isFresh(o.series)) || present[0];
+  return {
+    value: latest(chosen.series).value,
+    asOf: asOf(chosen.series),
+    low: chosen.low,
+    high: chosen.high,
+    sourceNote: chosen.note,
+    stale: !isFresh(chosen.series),
+  };
+}
+
+/**
  * The Sahm-style labour signal: current 3-month average unemployment rate minus
  * its minimum over the prior 12 months. A rise of ~0.5pp has historically
  * coincided with recession onset, and forced selling follows job loss.
@@ -97,7 +152,12 @@ export const INDICATORS = [
     high: 8,
     rationale:
       'The single most direct measure of market balance. Under ~4 months is a seller\'s market; above ~6 months buyers set the price. Above 8 months, price cuts are usually already underway.',
-    extract: (d) => ({ value: val(d.redfin?.monthsOfSupply), asOf: asOf(d.redfin?.monthsOfSupply) }),
+    extract: (d) =>
+      pickSource([
+        { series: d.redfin?.monthsOfSupply, low: 2.5, high: 8, note: 'Redfin' },
+        { series: d.resale?.existingMonthsSupply, low: 3, high: 8, note: "NAR months' supply via FRED" },
+        { series: d.resale?.derivedMonthsOfSupply, low: 2.5, high: 8, note: 'Realtor.com listings ÷ NAR sales pace' },
+      ]) || {},
   },
   {
     key: 'priceDrops',
@@ -110,7 +170,14 @@ export const INDICATORS = [
     high: 30,
     rationale:
       'The earliest visible seller capitulation. Sellers cut asking prices months before closed-sale medians reflect it, so this leads the reported price data.',
-    extract: (d) => ({ value: val(d.redfin?.priceDrops), asOf: asOf(d.redfin?.priceDrops) }),
+    extract: (d) =>
+      pickSource([
+        // Redfin: share of listings that CUT price this month (a flow).
+        { series: d.redfin?.priceDrops, low: 12, high: 30, note: 'Redfin, monthly price cuts' },
+        // Realtor.com: share of active listings currently marked reduced (a
+        // stock). Runs materially higher, so it gets its own calibration.
+        { series: d.resale?.priceReducedShare, low: 18, high: 45, note: 'Realtor.com, listings currently reduced' },
+      ]) || {},
   },
   {
     key: 'inventoryYoY',
@@ -123,12 +190,13 @@ export const INDICATORS = [
     high: 35,
     rationale:
       'Rising inventory means listings are accumulating faster than they clear. Sustained double-digit growth has preceded every regional price decline in the Redfin record.',
-    extract: (d) => {
-      const direct = val(d.redfin?.inventoryYoY);
-      if (direct !== null) return { value: direct, asOf: asOf(d.redfin?.inventoryYoY) };
-      // Fall back to computing it ourselves if Redfin's precomputed column is absent.
-      return { value: pctChange(d.redfin?.inventory, 12), asOf: asOf(d.redfin?.inventory) };
-    },
+    // A growth rate is scale-free, so both sources share one calibration here.
+    extract: (d) =>
+      pickSource([
+        { series: d.redfin?.inventoryYoY, low: -10, high: 35, note: 'Redfin' },
+        { series: yoyOf(d.resale?.activeListings), low: -10, high: 35, note: 'Realtor.com active listings' },
+        { series: yoyOf(d.redfin?.inventory), low: -10, high: 35, note: 'Redfin, computed' },
+      ]) || {},
   },
   {
     key: 'demandTrend',
@@ -141,11 +209,12 @@ export const INDICATORS = [
     high: -20,
     rationale:
       'Volume turns before price. Transactions falling year over year while inventory builds is the combination that forces price discovery downward.',
-    extract: (d) => {
-      const direct = val(d.redfin?.homesSoldYoY);
-      if (direct !== null) return { value: direct, asOf: asOf(d.redfin?.homesSoldYoY) };
-      return { value: pctChange(d.redfin?.homesSold, 12), asOf: asOf(d.redfin?.homesSold) };
-    },
+    extract: (d) =>
+      pickSource([
+        { series: d.redfin?.homesSoldYoY, low: 8, high: -20, note: 'Redfin' },
+        { series: yoyOf(d.resale?.existingHomeSales), low: 8, high: -20, note: 'NAR existing home sales via FRED' },
+        { series: yoyOf(d.redfin?.homesSold), low: 8, high: -20, note: 'Redfin, computed' },
+      ]) || {},
   },
   {
     key: 'saleToList',
@@ -158,7 +227,12 @@ export const INDICATORS = [
     high: 96,
     rationale:
       'Buyers paying above asking signals excess demand; sustained sales below list means sellers are conceding at the closing table.',
-    extract: (d) => ({ value: val(d.redfin?.saleToListRatio), asOf: asOf(d.redfin?.saleToListRatio) }),
+    // No live equivalent exists: Realtor.com publishes list prices, not the
+    // sale-to-list ratio. Routed through pickSource anyway so that when Redfin
+    // is stalled this indicator is visibly flagged rather than quietly carrying
+    // a months-old value at full weight.
+    extract: (d) =>
+      pickSource([{ series: d.redfin?.saleToListRatio, low: 101, high: 96, note: 'Redfin (no live substitute)' }]) || {},
   },
 
   // ---------------- New construction supply --------------------------------
@@ -326,22 +400,37 @@ export function computeRiskScore(data) {
     let observedAt = null;
     let error = null;
 
+    let low = ind.low;
+    let high = ind.high;
+    let sourceNote = null;
+    let stale = false;
+
     try {
       const got = ind.extract(data) || {};
       value = Number.isFinite(got.value) ? got.value : null;
       observedAt = got.asOf || null;
+      // An indicator that fell back to a different source brings that source's
+      // own thresholds with it — see pickSource.
+      if (Number.isFinite(got.low)) low = got.low;
+      if (Number.isFinite(got.high)) high = got.high;
+      sourceNote = got.sourceNote || null;
+      stale = Boolean(got.stale);
     } catch (e) {
       // A malformed series must never take down the whole gauge.
       error = e.message;
     }
 
-    const subScore = value === null ? null : scaleToRisk(value, ind.low, ind.high);
+    const subScore = value === null ? null : scaleToRisk(value, low, high);
 
     return {
       ...ind,
+      low,
+      high,
       value,
       observedAt,
       subScore,
+      sourceNote,
+      stale,
       available: subScore !== null,
       error,
       // Filled in below, once we know the renormalized weights.

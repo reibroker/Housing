@@ -74,9 +74,15 @@ export default function RiskBreakdown({ result }) {
                 <td>
                   <div style={{ fontWeight: 500 }}>{c.label}</div>
                   <div className="tiny-text muted">
-                    {c.source}
+                    {c.sourceNote || c.source}
                     {c.observedAt ? ` · as of ${new Date(`${c.observedAt}T00:00:00`).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}` : ''}
                   </div>
+                  {c.sourceNote && c.sourceNote !== c.source && (
+                    <div className="tiny-text" style={{ color: 'var(--text-secondary)' }}>
+                      Using a substitute source, with thresholds calibrated to it.
+                    </div>
+                  )}
+                  {c.stale && <span className="badge warn">source stalled</span>}
                   <details>
                     <summary>Why it matters</summary>
                     <p className="tiny-text muted" style={{ margin: '6px 0 0', maxWidth: '52ch' }}>{c.rationale}</p>

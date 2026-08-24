@@ -346,6 +346,12 @@ const SNAP = {
     },
     notes: { census: 'Published dates.', bls: 'BLS refuses automated clients; derived cadence shown.' },
   },
+  resale: { generatedAt: new Date().toISOString(), series: {
+    activeListings: snapSeries(1126252), newListings: snapSeries(423732),
+    medianDaysOnMarket: snapSeries(57), priceReducedShare: snapSeries(35.9),
+    medianListPrice: snapSeries(428950), existingMonthsSupply: snapSeries(4.6),
+    existingHomeSales: snapSeries(4060000), derivedMonthsOfSupply: snapSeries(3.33),
+  }},
   redfin: { generatedAt: new Date().toISOString(), series: {
     medianSalePrice: snapSeries(400000), medianSalePriceYoY: snapSeries(2),
     homesSold: snapSeries(420000), homesSoldYoY: snapSeries(-5),
@@ -381,6 +387,12 @@ const snapCov = await snapPage.locator('.coverage').first().innerText();
 check('snapshot mode resolves every indicator', /100%/.test(snapCov), snapCov.replace(/\s+/g, ' '));
 check('snapshot mode needs no API key and no external host', snapExternal.length === 0, snapExternal.slice(0, 3).join(', '));
 check('snapshot mode shows its build age', (await snapPage.locator('.notice.info').count()) > 0);
+
+// Source substitution must be visible, not silent: the fixture's Redfin series
+// are current, so Redfin should win; the assertion is that provenance is stated
+// at all, which is what makes a fallback safe.
+const breakdownText = await snapPage.locator('.app').innerText();
+check('breakdown states which source each indicator used', /Redfin|Realtor\.com|NAR|BLS/.test(breakdownText));
 for (const label of ['Inventory & demand', 'Construction & permits', 'Employment', 'Credit & confidence']) {
   await snapPage.getByRole('tab', { name: label }).click();
   await snapPage.waitForTimeout(400);
