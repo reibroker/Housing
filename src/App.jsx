@@ -122,6 +122,12 @@ export default function App() {
     return `${Math.round(hrs / 24)} days ago`;
   }, [fred.meta, bls.meta, redfin.meta]);
 
+  // Which panels are reading the second source rather than the primary.
+  const mirrorNote = useMemo(() => {
+    const src = census.meta?.manifest?.sources?.census;
+    return src?.note || null;
+  }, [census.meta]);
+
   return (
     <div className="app">
       <header className="masthead">
@@ -150,8 +156,8 @@ export default function App() {
         <div className="notice info" role="status">
           <strong>Reading the published data snapshot</strong>
           Built {snapshotAge}. FRED and Redfin send no CORS headers, so a browser cannot read them directly — a
-          scheduled job fetches all four sources server-side and publishes them here. Switch to
-          &ldquo;Live APIs&rdquo; if you have your own Census key and want to fetch in-page.
+          scheduled job fetches every source server-side, hourly, and publishes the result here.
+          {mirrorNote && <> {mirrorNote}</>}
         </div>
       )}
 

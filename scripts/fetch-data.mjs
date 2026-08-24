@@ -562,12 +562,47 @@ write('bls', { series: bls, generatedAt: report.generatedAt });
 write('fred', { series: fred, generatedAt: report.generatedAt });
 write('redfin', { series: redfin, generatedAt: report.generatedAt });
 
+// The manifest is what the UI reports as source status, so it must describe the
+// data that actually shipped -- not the raw fetch outcome. A Census fetch that
+// failed for want of a key, whose every series was then filled from the FRED
+// mirror, is a working panel sourced elsewhere; reporting it as "failed" next to
+// a chart full of data is worse than useless. `calendar` and `mirrors` are a
+// probe and a support layer, not user-facing sources, so they stay out.
+const DATA_SOURCES = ['census', 'bls', 'fred', 'redfin'];
+const filledCount = Object.keys(filledFrom).length;
+
 const manifest = {
   generatedAt: report.generatedAt,
   historyYears: HISTORY_YEARS,
   sources: Object.fromEntries(
-    Object.entries(report.sources).map(([k, v]) => [k, { ok: Boolean(v.ok), error: v.error || null, cors: v.cors ?? null }])
+    DATA_SOURCES.map((k) => {
+      const v = report.sources[k] || {};
+      const shipped =
+        k === 'census'
+          ? Object.values(censusOut).some((x) => x?.length)
+          : Boolean(v.ok);
+      const viaMirror = k === 'census' && filledCount > 0;
+      return [
+        k,
+        {
+          ok: shipped,
+          // Keep the underlying reason visible even when the mirror saved us:
+          // the user still wants to know a Census key would upgrade these.
+          error: shipped ? null : v.error || null,
+          note: viaMirror
+            ? `${filledCount} series sourced from the FRED mirror because the primary Census API was unavailable` +
+              (v.error ? ` (${v.error})` : '') +
+              '. Add a CENSUS_API_KEY secret to read the primary and turn the mirror into a cross-check.'
+            : null,
+          cors: v.cors ?? null,
+        },
+      ];
+    })
   ),
+  mirrors: {
+    resolved: Object.keys(report.sources.mirrors?.resolved || {}).length,
+    failed: Object.keys(report.sources.mirrors?.failed || {}).length,
+  },
 };
 manifest.crossChecks = Object.fromEntries(Object.entries(checks).map(([k, c]) => [k, c.status]));
 manifest.filledFromMirror = filledFrom;
