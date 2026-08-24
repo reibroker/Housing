@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-24T21:48:59.584Z",
+  "generatedAt": "2026-08-24T22:48:21.895Z",
   "node": "v20.20.2",
   "sources": {
     "census": {
@@ -191,97 +191,6 @@
       "parsed": 169,
       "ok": true
     },
-    "zillow": {
-      "attribution": "Zillow Group, Zillow Research public data",
-      "resolved": {
-        "homeValueIndex": {
-          "n": 319,
-          "dateColumns": 319,
-          "first": {
-            "date": "2000-01-01",
-            "value": 124760.35338645264
-          },
-          "last": {
-            "date": "2026-07-01",
-            "value": 371774.01398407604
-          }
-        },
-        "homeValueForecast": {
-          "n": 3,
-          "dateColumns": 3,
-          "first": {
-            "date": "2026-08-01",
-            "value": 0.1
-          },
-          "last": {
-            "date": "2027-07-01",
-            "value": 1.1
-          }
-        },
-        "inventory": {
-          "n": 101,
-          "dateColumns": 101,
-          "first": {
-            "date": "2018-03-01",
-            "value": 1421529
-          },
-          "last": {
-            "date": "2026-07-01",
-            "value": 1389936
-          }
-        },
-        "newListings": {
-          "n": 101,
-          "dateColumns": 101,
-          "first": {
-            "date": "2018-03-01",
-            "value": 391819
-          },
-          "last": {
-            "date": "2026-07-01",
-            "value": 404817
-          }
-        },
-        "daysToPending": {
-          "n": 101,
-          "dateColumns": 101,
-          "first": {
-            "date": "2018-03-01",
-            "value": 31
-          },
-          "last": {
-            "date": "2026-07-01",
-            "value": 21
-          }
-        },
-        "priceCutShare": {
-          "n": 101,
-          "dateColumns": 101,
-          "first": {
-            "date": "2018-03-01",
-            "value": 0.1466661174748287
-          },
-          "last": {
-            "date": "2026-07-01",
-            "value": 0.25569782331498686
-          }
-        },
-        "medianSalePrice": {
-          "n": 95,
-          "dateColumns": 95,
-          "first": {
-            "date": "2018-08-01",
-            "value": 225812
-          },
-          "last": {
-            "date": "2026-06-01",
-            "value": 371427
-          }
-        }
-      },
-      "failed": {},
-      "ok": true
-    },
     "fred": {
       "ok": true,
       "cors": null,
@@ -432,6 +341,97 @@
           "last": {
             "date": "2026-07-01",
             "value": 3.328823645320197
+          }
+        }
+      },
+      "failed": {},
+      "ok": true
+    },
+    "zillow": {
+      "attribution": "Zillow Group, Zillow Research public data",
+      "resolved": {
+        "homeValueIndex": {
+          "n": 319,
+          "dateColumns": 319,
+          "first": {
+            "date": "2000-01-01",
+            "value": 124760.35338645264
+          },
+          "last": {
+            "date": "2026-07-01",
+            "value": 371774.01398407604
+          }
+        },
+        "homeValueForecast": {
+          "n": 3,
+          "dateColumns": 3,
+          "first": {
+            "date": "2026-08-01",
+            "value": 0.1
+          },
+          "last": {
+            "date": "2027-07-01",
+            "value": 1.1
+          }
+        },
+        "inventory": {
+          "n": 101,
+          "dateColumns": 101,
+          "first": {
+            "date": "2018-03-01",
+            "value": 1421529
+          },
+          "last": {
+            "date": "2026-07-01",
+            "value": 1389936
+          }
+        },
+        "newListings": {
+          "n": 101,
+          "dateColumns": 101,
+          "first": {
+            "date": "2018-03-01",
+            "value": 391819
+          },
+          "last": {
+            "date": "2026-07-01",
+            "value": 404817
+          }
+        },
+        "daysToPending": {
+          "n": 101,
+          "dateColumns": 101,
+          "first": {
+            "date": "2018-03-01",
+            "value": 31
+          },
+          "last": {
+            "date": "2026-07-01",
+            "value": 21
+          }
+        },
+        "priceCutShare": {
+          "n": 101,
+          "dateColumns": 101,
+          "first": {
+            "date": "2018-03-01",
+            "value": 0.1466661174748287
+          },
+          "last": {
+            "date": "2026-07-01",
+            "value": 0.25569782331498686
+          }
+        },
+        "medianSalePrice": {
+          "n": 95,
+          "dateColumns": 95,
+          "first": {
+            "date": "2018-08-01",
+            "value": 225812
+          },
+          "last": {
+            "date": "2026-06-01",
+            "value": 371427
           }
         }
       },
