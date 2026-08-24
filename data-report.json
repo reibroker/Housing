@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-24T20:29:13.574Z",
+  "generatedAt": "2026-08-24T20:33:04.204Z",
   "node": "v20.20.2",
   "sources": {
     "census": {
@@ -187,7 +187,9 @@
           "sampleEvent": null,
           "htmlRowSample": []
         }
-      }
+      },
+      "parsed": 169,
+      "ok": true
     },
     "fred": {
       "ok": true,
@@ -456,5 +458,396 @@
     "newHomesForSale": "HNFSEPUSSA",
     "homeownerVacancy": "RHVRUSQ156N",
     "rentalVacancy": "RRVRUSQ156N"
+  },
+  "freshness": {
+    "startsTotal": {
+      "group": "census",
+      "ok": true,
+      "latest": "2026-07-01",
+      "latestValue": 1239,
+      "ageDays": 55,
+      "expectedMaxAgeDays": 75,
+      "overdue": false,
+      "cadence": "monthly",
+      "rule": null
+    },
+    "startsSingle": {
+      "group": "census",
+      "ok": true,
+      "latest": "2026-07-01",
+      "latestValue": 808,
+      "ageDays": 55,
+      "expectedMaxAgeDays": 75,
+      "overdue": false,
+      "cadence": "monthly",
+      "rule": null
+    },
+    "permitsTotal": {
+      "group": "census",
+      "ok": true,
+      "latest": "2026-07-01",
+      "latestValue": 1443,
+      "ageDays": 55,
+      "expectedMaxAgeDays": 75,
+      "overdue": false,
+      "cadence": "monthly",
+      "rule": null
+    },
+    "permitsSingle": {
+      "group": "census",
+      "ok": true,
+      "latest": "2026-07-01",
+      "latestValue": 894,
+      "ageDays": 55,
+      "expectedMaxAgeDays": 75,
+      "overdue": false,
+      "cadence": "monthly",
+      "rule": null
+    },
+    "underConstruction": {
+      "group": "census",
+      "ok": true,
+      "latest": "2026-07-01",
+      "latestValue": 1262,
+      "ageDays": 55,
+      "expectedMaxAgeDays": 75,
+      "overdue": false,
+      "cadence": "monthly",
+      "rule": null
+    },
+    "completions": {
+      "group": "census",
+      "ok": true,
+      "latest": "2026-07-01",
+      "latestValue": 1212,
+      "ageDays": 55,
+      "expectedMaxAgeDays": 75,
+      "overdue": false,
+      "cadence": "monthly",
+      "rule": null
+    },
+    "newHomeSales": {
+      "group": "census",
+      "ok": true,
+      "latest": "2026-06-01",
+      "latestValue": 628,
+      "ageDays": 85,
+      "expectedMaxAgeDays": 75,
+      "overdue": false,
+      "cadence": "monthly",
+      "rule": null
+    },
+    "newHomeMonthsSupply": {
+      "group": "census",
+      "ok": true,
+      "latest": "2026-06-01",
+      "latestValue": 9.3,
+      "ageDays": 85,
+      "expectedMaxAgeDays": 75,
+      "overdue": false,
+      "cadence": "monthly",
+      "rule": null
+    },
+    "newHomesForSale": {
+      "group": "census",
+      "ok": true,
+      "latest": "2026-06-01",
+      "latestValue": 485,
+      "ageDays": 85,
+      "expectedMaxAgeDays": 75,
+      "overdue": false,
+      "cadence": "monthly",
+      "rule": null
+    },
+    "homeownerVacancy": {
+      "group": "census",
+      "ok": true,
+      "latest": "2026-04-01",
+      "latestValue": 1.2,
+      "ageDays": 146,
+      "expectedMaxAgeDays": 75,
+      "overdue": true,
+      "cadence": "monthly",
+      "rule": null
+    },
+    "rentalVacancy": {
+      "group": "census",
+      "ok": true,
+      "latest": "2026-04-01",
+      "latestValue": 7.3,
+      "ageDays": 146,
+      "expectedMaxAgeDays": 75,
+      "overdue": true,
+      "cadence": "monthly",
+      "rule": null
+    },
+    "residentialConstructionJobs": {
+      "group": "bls",
+      "ok": true,
+      "latest": "2026-07-01",
+      "latestValue": 914.6,
+      "ageDays": 55,
+      "expectedMaxAgeDays": 38,
+      "overdue": true,
+      "cadence": "monthly",
+      "rule": "First Friday of the month after the reference month"
+    },
+    "residentialTradeJobs": {
+      "group": "bls",
+      "ok": true,
+      "latest": "2026-07-01",
+      "latestValue": 5271.2,
+      "ageDays": 55,
+      "expectedMaxAgeDays": 38,
+      "overdue": true,
+      "cadence": "monthly",
+      "rule": "First Friday of the month after the reference month"
+    },
+    "constructionJobs": {
+      "group": "bls",
+      "ok": true,
+      "latest": "2026-07-01",
+      "latestValue": 8343,
+      "ageDays": 55,
+      "expectedMaxAgeDays": 38,
+      "overdue": true,
+      "cadence": "monthly",
+      "rule": "First Friday of the month after the reference month"
+    },
+    "totalNonfarm": {
+      "group": "bls",
+      "ok": true,
+      "latest": "2026-07-01",
+      "latestValue": 158858,
+      "ageDays": 55,
+      "expectedMaxAgeDays": 38,
+      "overdue": true,
+      "cadence": "monthly",
+      "rule": "First Friday of the month after the reference month"
+    },
+    "unemploymentRate": {
+      "group": "bls",
+      "ok": true,
+      "latest": "2026-07-01",
+      "latestValue": 4.1,
+      "ageDays": 55,
+      "expectedMaxAgeDays": 38,
+      "overdue": true,
+      "cadence": "monthly",
+      "rule": "First Friday of the month after the reference month"
+    },
+    "cpiShelter": {
+      "group": "bls",
+      "ok": true,
+      "latest": "2026-07-01",
+      "latestValue": 429.095,
+      "ageDays": 55,
+      "expectedMaxAgeDays": 44,
+      "overdue": true,
+      "cadence": "monthly",
+      "rule": "Mid-month, about the 13th, for the prior month"
+    },
+    "stateUnemploymentRate": {
+      "group": "bls",
+      "ok": false
+    },
+    "mortgage30yr": {
+      "group": "fred",
+      "ok": true,
+      "latest": "2026-08-20",
+      "latestValue": 6.65,
+      "ageDays": 5,
+      "expectedMaxAgeDays": 7,
+      "overdue": false,
+      "cadence": "weekly",
+      "rule": "Thursdays"
+    },
+    "consumerSentiment": {
+      "group": "fred",
+      "ok": true,
+      "latest": "2026-06-01",
+      "latestValue": 49.5,
+      "ageDays": 85,
+      "expectedMaxAgeDays": 45,
+      "overdue": true,
+      "cadence": "monthly",
+      "rule": "Preliminary mid-month, final end of month"
+    },
+    "revolvingCredit": {
+      "group": "fred",
+      "ok": true,
+      "latest": "2026-06-01",
+      "latestValue": 1351.0691399999998,
+      "ageDays": 85,
+      "expectedMaxAgeDays": 68,
+      "overdue": true,
+      "cadence": "monthly",
+      "rule": "About the fifth business day, two months in arrears"
+    },
+    "creditCardDelinquency": {
+      "group": "fred",
+      "ok": true,
+      "latest": "2026-01-01",
+      "latestValue": 2.92,
+      "ageDays": 236,
+      "expectedMaxAgeDays": 130,
+      "overdue": true,
+      "cadence": "quarterly",
+      "rule": "About 8 weeks after quarter end"
+    },
+    "caseShiller": {
+      "group": "fred",
+      "ok": true,
+      "latest": "2026-05-01",
+      "latestValue": 335.104,
+      "ageDays": 116,
+      "expectedMaxAgeDays": 88,
+      "overdue": true,
+      "cadence": "monthly",
+      "rule": "Last Tuesday, two months in arrears"
+    },
+    "existingHomeSales": {
+      "group": "fred",
+      "ok": true,
+      "latest": "2026-07-01",
+      "latestValue": 4060000,
+      "ageDays": 55,
+      "expectedMaxAgeDays": 75,
+      "overdue": false,
+      "cadence": "monthly",
+      "rule": null
+    },
+    "medianSalePrice": {
+      "group": "redfin",
+      "ok": true,
+      "latest": "2026-05-01",
+      "latestValue": 440410.810237043,
+      "ageDays": 116,
+      "expectedMaxAgeDays": 50,
+      "overdue": true,
+      "cadence": "monthly",
+      "rule": "Mid-month for the prior month"
+    },
+    "medianSalePriceYoY": {
+      "group": "redfin",
+      "ok": true,
+      "latest": "2026-05-01",
+      "latestValue": 2.2954688389999998,
+      "ageDays": 116,
+      "expectedMaxAgeDays": 75,
+      "overdue": true,
+      "cadence": "monthly",
+      "rule": null
+    },
+    "homesSold": {
+      "group": "redfin",
+      "ok": true,
+      "latest": "2026-05-01",
+      "latestValue": 432014.72441824,
+      "ageDays": 116,
+      "expectedMaxAgeDays": 75,
+      "overdue": true,
+      "cadence": "monthly",
+      "rule": null
+    },
+    "homesSoldYoY": {
+      "group": "redfin",
+      "ok": true,
+      "latest": "2026-05-01",
+      "latestValue": 0.5739396192,
+      "ageDays": 116,
+      "expectedMaxAgeDays": 75,
+      "overdue": true,
+      "cadence": "monthly",
+      "rule": null
+    },
+    "newListings": {
+      "group": "redfin",
+      "ok": true,
+      "latest": "2026-05-01",
+      "latestValue": 540196.67326278,
+      "ageDays": 116,
+      "expectedMaxAgeDays": 75,
+      "overdue": true,
+      "cadence": "monthly",
+      "rule": null
+    },
+    "inventory": {
+      "group": "redfin",
+      "ok": true,
+      "latest": "2026-05-01",
+      "latestValue": 1397071.40811108,
+      "ageDays": 116,
+      "expectedMaxAgeDays": 50,
+      "overdue": true,
+      "cadence": "monthly",
+      "rule": "Mid-month for the prior month"
+    },
+    "inventoryYoY": {
+      "group": "redfin",
+      "ok": true,
+      "latest": "2026-05-01",
+      "latestValue": -9.141150772,
+      "ageDays": 116,
+      "expectedMaxAgeDays": 75,
+      "overdue": true,
+      "cadence": "monthly",
+      "rule": null
+    },
+    "monthsOfSupply": {
+      "group": "redfin",
+      "ok": true,
+      "latest": "2026-05-01",
+      "latestValue": 3.362799658,
+      "ageDays": 116,
+      "expectedMaxAgeDays": 50,
+      "overdue": true,
+      "cadence": "monthly",
+      "rule": "Mid-month for the prior month"
+    },
+    "medianDaysOnMarket": {
+      "group": "redfin",
+      "ok": true,
+      "latest": "2026-05-01",
+      "latestValue": 50.022834756,
+      "ageDays": 116,
+      "expectedMaxAgeDays": 75,
+      "overdue": true,
+      "cadence": "monthly",
+      "rule": null
+    },
+    "saleToListRatio": {
+      "group": "redfin",
+      "ok": true,
+      "latest": "2026-05-01",
+      "latestValue": 98.60065156,
+      "ageDays": 116,
+      "expectedMaxAgeDays": 75,
+      "overdue": true,
+      "cadence": "monthly",
+      "rule": null
+    },
+    "soldAboveList": {
+      "group": "redfin",
+      "ok": true,
+      "latest": "2026-05-01",
+      "latestValue": 25.92082096,
+      "ageDays": 116,
+      "expectedMaxAgeDays": 75,
+      "overdue": true,
+      "cadence": "monthly",
+      "rule": null
+    },
+    "priceDrops": {
+      "group": "redfin",
+      "ok": true,
+      "latest": "2026-05-01",
+      "latestValue": 19.956237169999998,
+      "ageDays": 116,
+      "expectedMaxAgeDays": 50,
+      "overdue": true,
+      "cadence": "monthly",
+      "rule": "Mid-month for the prior month"
+    }
   }
 }
