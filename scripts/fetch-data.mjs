@@ -562,22 +562,53 @@ function computeFreshness(bundle) {
   const out = {};
   const now = Date.now();
   const ruleFor = (name) => Object.values(RELEASE_RULES).find((r) => r.series.includes(name));
+
+  /**
+   * Median spacing between the last two years of observations. This is how the
+   * cadence is determined -- measured, not assumed.
+   *
+   * The first version used a hand-written lag table and flagged 24 of 36 series
+   * as overdue, which said more about the table than about the data. Reference
+   * dates are not publication dates: a monthly figure stamped 2026-05-01 is
+   * published in mid-June, so its age measured from the reference date is
+   * routinely 60-90 days even when perfectly current. Deriving the interval per
+   * series sidesteps that guesswork entirely and adapts to weekly, monthly and
+   * quarterly series without a lookup.
+   */
+  const medianIntervalDays = (pts) => {
+    const recent = pts.slice(-24);
+    if (recent.length < 3) return null;
+    const gaps = [];
+    for (let i = 1; i < recent.length; i++) {
+      gaps.push((new Date(recent[i].date + 'T00:00:00Z') - new Date(recent[i - 1].date + 'T00:00:00Z')) / 86_400_000);
+    }
+    gaps.sort((a, b) => a - b);
+    return gaps[Math.floor(gaps.length / 2)];
+  };
+
   for (const [group, series] of Object.entries(bundle)) {
     for (const [name, pts] of Object.entries(series || {})) {
       if (!Array.isArray(pts) || !pts.length) { out[name] = { group, ok: false }; continue; }
       const last = pts[pts.length - 1];
       const ageDays = Math.round((now - new Date(last.date + 'T00:00:00Z').getTime()) / 86_400_000);
+      const interval = medianIntervalDays(pts);
       const rule = ruleFor(name);
-      const expected = rule ? rule.lagDays : 75;
+
+      // Flag only after roughly two whole periods have been missed on top of the
+      // normal publication lag. Anything tighter fires on healthy series;
+      // anything looser misses a feed that has genuinely stopped.
+      const threshold = interval ? Math.max(45, Math.round(interval * 3)) : 120;
+
       out[name] = {
         group,
         ok: true,
         latest: last.date,
         latestValue: last.value,
         ageDays,
-        expectedMaxAgeDays: expected,
-        overdue: ageDays > expected + 10,
-        cadence: rule?.cadence || 'monthly',
+        intervalDays: interval,
+        expectedMaxAgeDays: threshold,
+        overdue: ageDays > threshold,
+        cadence: !interval ? 'unknown' : interval <= 10 ? 'weekly' : interval <= 45 ? 'monthly' : interval <= 130 ? 'quarterly' : 'annual',
         rule: rule?.rule || null,
       };
     }

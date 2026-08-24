@@ -100,14 +100,16 @@ export default function ReleasesPanel({ calendar, loading, error }) {
       <section className="card full">
         <div className="card-head"><h3>Freshness by series</h3></div>
         <p className="card-sub">
-          How old each series&rsquo; newest observation is, against what its publication schedule implies.
+          How old each series&rsquo; newest observation is. The threshold is derived from that series&rsquo; own
+          observed spacing &mdash; roughly three intervals &mdash; rather than assumed, because a reference date is
+          not a publication date: a figure stamped 1 May is published in mid-June and is perfectly current at 60 days old.
         </p>
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>Series</th><th>Source</th><th>Latest</th><th className="num">Value</th>
-                <th className="num">Age</th><th className="num">Expected</th><th>Status</th><th>Schedule</th>
+                <th className="num">Age</th><th className="num">Flag at</th><th>Cadence</th><th>Status</th><th>Schedule</th>
               </tr>
             </thead>
             <tbody>
@@ -121,6 +123,7 @@ export default function ReleasesPanel({ calendar, loading, error }) {
                     <td className="num">{formatValue(f.latestValue, { decimals: 2 })}</td>
                     <td className="num">{f.ok ? `${f.ageDays}d` : '—'}</td>
                     <td className="num muted">{f.ok ? `${f.expectedMaxAgeDays}d` : '—'}</td>
+                    <td className="small muted">{f.ok ? `${f.cadence}${f.intervalDays ? ` · ~${f.intervalDays}d` : ''}` : '—'}</td>
                     <td><Freshness f={f} /></td>
                     <td className="tiny-text muted">{f.rule || `${f.cadence}, estimated`}</td>
                   </tr>

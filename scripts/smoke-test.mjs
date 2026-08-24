@@ -341,8 +341,8 @@ const SNAP = {
     ],
     derivedRules: {},
     freshness: {
-      monthsOfSupply: { group: 'redfin', ok: true, latest: '2026-05-01', latestValue: 3.36, ageDays: 60, expectedMaxAgeDays: 50, overdue: true, cadence: 'monthly', rule: 'Mid-month for the prior month' },
-      unemploymentRate: { group: 'bls', ok: true, latest: '2026-07-01', latestValue: 4.1, ageDays: 30, expectedMaxAgeDays: 38, overdue: false, cadence: 'monthly', rule: 'First Friday' },
+      monthsOfSupply: { group: 'redfin', ok: true, latest: '2026-05-01', latestValue: 3.36, ageDays: 116, intervalDays: 31, expectedMaxAgeDays: 93, overdue: true, cadence: 'monthly', rule: 'Mid-month for the prior month' },
+      unemploymentRate: { group: 'bls', ok: true, latest: '2026-07-01', latestValue: 4.1, ageDays: 30, intervalDays: 31, expectedMaxAgeDays: 93, overdue: false, cadence: 'monthly', rule: 'First Friday' },
     },
     notes: { census: 'Published dates.', bls: 'BLS refuses automated clients; derived cadence shown.' },
   },
