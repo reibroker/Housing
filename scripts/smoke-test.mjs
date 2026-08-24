@@ -346,6 +346,12 @@ const SNAP = {
     },
     notes: { census: 'Published dates.', bls: 'BLS refuses automated clients; derived cadence shown.' },
   },
+  zillow: { generatedAt: new Date().toISOString(), attribution: 'Zillow Group, Zillow Research', series: {
+    homeValueIndex: snapSeries(371774), homeValueForecast: [{ date: '2027-07-01', value: 1.1 }],
+    inventory: snapSeries(1389936), newListings: snapSeries(404817),
+    daysToPending: snapSeries(21), priceCutShare: snapSeries(0.2557),
+    medianSalePrice: snapSeries(371427),
+  }},
   resale: { generatedAt: new Date().toISOString(), series: {
     activeListings: snapSeries(1126252), newListings: snapSeries(423732),
     medianDaysOnMarket: snapSeries(57), priceReducedShare: snapSeries(35.9),
@@ -398,6 +404,19 @@ for (const label of ['Inventory & demand', 'Construction & permits', 'Employment
   await snapPage.waitForTimeout(400);
   check(`snapshot tab "${label}" renders charts`, (await snapPage.locator('.recharts-surface').count()) > 0);
 }
+
+// Compare tab: three sources, the forecast, and — most importantly — that the
+// definitional differences are stated rather than presented as disagreement.
+await snapPage.getByRole('tab', { name: 'Compare sources' }).click();
+await snapPage.waitForTimeout(700);
+const cmp = await snapPage.locator('.app').innerText();
+check('compare tab shows all three portals', /Redfin/.test(cmp) && /Realtor\.com/.test(cmp) && /Zillow/.test(cmp));
+check('compare tab surfaces the Zillow forecast', /1\.1%/.test(cmp));
+check('compare tab flags non-comparable metrics', /Different definitions/.test(cmp));
+check('compare tab explains days-on-market differs by definition', /days to PENDING|days to pending/i.test(cmp));
+check('compare tab is honest that two forecasts are prose only', /prose only/.test(cmp));
+check('compare tab credits Zillow', /Zillow Group/.test(cmp));
+check('compare tab renders comparison charts', (await snapPage.locator('.recharts-surface').count()) >= 3);
 
 // Releases tab: scheduled dates, overdue detection, and the BLS-refusal note.
 await snapPage.getByRole('tab', { name: 'Releases' }).click();

@@ -61,7 +61,7 @@ export async function loadSnapshot() {
   // produce a working dashboard.
   const calendar = await getJson('calendar').catch(() => null);
 
-  const names = ['census', 'bls', 'fred', 'redfin', 'resale'];
+  const names = ['census', 'bls', 'fred', 'redfin', 'resale', 'zillow'];
   const results = await Promise.allSettled(names.map((n) => getJson(n)));
 
   const series = {};
