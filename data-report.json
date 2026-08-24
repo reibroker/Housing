@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-24T20:20:07.536Z",
+  "generatedAt": "2026-08-24T20:22:35.547Z",
   "node": "v20.20.2",
   "sources": {
     "census": {
@@ -10,22 +10,6 @@
       "unmatched": [],
       "allCodes": {},
       "error": "CENSUS_API_KEY not set — Census rejects every unkeyed request."
-    },
-    "bls": {
-      "ok": true,
-      "cors": "*",
-      "keyed": false,
-      "status": "REQUEST_SUCCEEDED",
-      "message": [],
-      "counts": {
-        "residentialConstructionJobs": 115,
-        "residentialTradeJobs": 115,
-        "constructionJobs": 115,
-        "totalNonfarm": 115,
-        "unemploymentRate": 115,
-        "cpiShelter": 115,
-        "stateUnemploymentRate": 0
-      }
     },
     "redfin": {
       "ok": true,
@@ -128,6 +112,22 @@
           "date": "2026-05-01",
           "value": 19.956237169999998
         }
+      }
+    },
+    "bls": {
+      "ok": true,
+      "cors": "*",
+      "keyed": false,
+      "status": "REQUEST_SUCCEEDED",
+      "message": [],
+      "counts": {
+        "residentialConstructionJobs": 115,
+        "residentialTradeJobs": 115,
+        "constructionJobs": 115,
+        "totalNonfarm": 115,
+        "unemploymentRate": 115,
+        "cpiShelter": 115,
+        "stateUnemploymentRate": 0
       }
     },
     "calendar": {
