@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-25T01:56:20.774Z",
+  "generatedAt": "2026-08-25T03:16:28.109Z",
   "node": "v20.20.2",
   "sources": {
     "census": {
@@ -10,83 +10,6 @@
       "unmatched": [],
       "allCodes": {},
       "error": "CENSUS_API_KEY not set — Census rejects every unkeyed request."
-    },
-    "bls": {
-      "ok": true,
-      "cors": "*",
-      "keyed": false,
-      "status": "REQUEST_SUCCEEDED",
-      "message": [],
-      "counts": {
-        "residentialConstructionJobs": 115,
-        "residentialTradeJobs": 115,
-        "constructionJobs": 115,
-        "totalNonfarm": 115,
-        "unemploymentRate": 115,
-        "cpiShelter": 115,
-        "stateUnemploymentRate": 0
-      }
-    },
-    "calendar": {
-      "userAgent": "HousingMarketDashboard/1.0 (+https://github.com/reibroker/Housing; public data, hourly)",
-      "robots": {
-        "https://www.bls.gov": {
-          "allowed": null,
-          "error": "HTTP 403 Forbidden — Access Denied \n \n   \n    .centerDiv\n    {\n      width: 60%;\n      height:200px;\n      margin: 0 aut"
-        },
-        "https://www.census.gov": {
-          "allowed": true,
-          "matchedRule": null,
-          "rules": 1
-        }
-      },
-      "probes": {
-        "bls_ics": {
-          "ok": false,
-          "error": "HTTP 403 Forbidden — Access Denied \n \n   \n    .centerDiv\n    {\n      width: 60%;\n      height:200px;\n      margin: 0 auto;\n      background-color:#FFFFFF ;\n    }\n   \n \n \n                    Bureau of Labor Statistics  \n  "
-        },
-        "bls_sched_26": {
-          "ok": false,
-          "error": "HTTP 403 Forbidden — Access Denied \n \n   \n    .centerDiv\n    {\n      width: 60%;\n      height:200px;\n      margin: 0 auto;\n      background-color:#FFFFFF ;\n    }\n   \n \n \n                    Bureau of Labor Statistics  \n  "
-        },
-        "bls_sched_27": {
-          "ok": false,
-          "error": "HTTP 403 Forbidden — Access Denied \n \n   \n    .centerDiv\n    {\n      width: 60%;\n      height:200px;\n      margin: 0 auto;\n      background-color:#FFFFFF ;\n    }\n   \n \n \n                    Bureau of Labor Statistics  \n  "
-        },
-        "census_list": {
-          "ok": true,
-          "cors": null,
-          "bytes": 91749,
-          "kind": "html",
-          "vevents": 0,
-          "sampleEvent": null,
-          "htmlRowSample": [
-            "<tr height=\"20\"> <td height=\"20\"><a href=\"/manufacturing/m3/\">Full Report - Manufacturers' Shipments, Inventories and Orders</a></td> <td sorttable_customkey=\"202601071000\">January 7, 2026</td> <td>10:00 AM</td> <td>October 2025</td> <td class=\"hiden\">A202601071000</td> <td class=\"hiden\">A202510</td> </tr>",
-            "<tr height=\"20\"> <td height=\"20\"><a href=\"/foreign-trade/\">U.S. International Trade in Goods and Services</a></td> <td sorttable_customkey=\"202601080830\">January 8, 2026</td> <td>8:30 AM</td> <td>October 2025</td> <td class=\"hiden\">A202601080830</td> <td class=\"hiden\">A202510</td> </tr>",
-            "<tr height=\"20\"> <td height=\"20\"><a href=\"/wholesale/index.html\">Monthly Wholesale Trade: Sales and Inventories</a></td> <td sorttable_customkey=\"202601081000\">January 8, 2026</td> <td>10:00 AM</td> <td>October 2025</td> <td class=\"hiden\">A202601081000</td> <td class=\"hiden\">A202510</td> </tr>"
-          ]
-        },
-        "census_ics": {
-          "ok": true,
-          "cors": null,
-          "bytes": 76530,
-          "kind": "html",
-          "vevents": 0,
-          "sampleEvent": null,
-          "htmlRowSample": []
-        },
-        "census_json": {
-          "ok": true,
-          "cors": null,
-          "bytes": 76530,
-          "kind": "html",
-          "vevents": 0,
-          "sampleEvent": null,
-          "htmlRowSample": []
-        }
-      },
-      "parsed": 169,
-      "ok": true
     },
     "redfin": {
       "ok": true,
@@ -191,161 +114,82 @@
         }
       }
     },
-    "resale": {
-      "resolved": {
-        "activeListings": {
-          "id": "ACTLISCOUUS",
-          "n": 121,
-          "last": {
-            "date": "2026-07-01",
-            "value": 1126252
-          }
+    "bls": {
+      "ok": true,
+      "cors": "*",
+      "keyed": false,
+      "status": "REQUEST_SUCCEEDED",
+      "message": [],
+      "counts": {
+        "residentialConstructionJobs": 115,
+        "residentialTradeJobs": 115,
+        "constructionJobs": 115,
+        "totalNonfarm": 115,
+        "unemploymentRate": 115,
+        "cpiShelter": 115,
+        "stateUnemploymentRate": 0
+      }
+    },
+    "calendar": {
+      "userAgent": "HousingMarketDashboard/1.0 (+https://github.com/reibroker/Housing; public data, hourly)",
+      "robots": {
+        "https://www.bls.gov": {
+          "allowed": null,
+          "error": "HTTP 403 Forbidden — Access Denied \n \n   \n    .centerDiv\n    {\n      width: 60%;\n      height:200px;\n      margin: 0 aut"
         },
-        "newListings": {
-          "id": "NEWLISCOUUS",
-          "n": 121,
-          "last": {
-            "date": "2026-07-01",
-            "value": 423732
-          }
-        },
-        "medianDaysOnMarket": {
-          "id": "MEDDAYONMARUS",
-          "n": 121,
-          "last": {
-            "date": "2026-07-01",
-            "value": 57
-          }
-        },
-        "priceReducedCount": {
-          "id": "PRIREDCOUUS",
-          "n": 121,
-          "last": {
-            "date": "2026-07-01",
-            "value": 404344
-          }
-        },
-        "medianListPrice": {
-          "id": "MEDLISPRIUS",
-          "n": 121,
-          "last": {
-            "date": "2026-07-01",
-            "value": 428950
-          }
-        },
-        "existingMonthsSupply": {
-          "id": "HOSSUPUSM673N",
-          "n": 13,
-          "last": {
-            "date": "2026-07-01",
-            "value": 4.6
-          }
-        },
-        "existingHomeSales": {
-          "id": "EXHOSLUSM495S",
-          "n": 13,
-          "last": {
-            "date": "2026-07-01",
-            "value": 4060000
-          }
-        },
-        "priceReducedShare": {
-          "id": "PRIREDCOUUS / ACTLISCOUUS",
-          "n": 121,
-          "last": {
-            "date": "2026-07-01",
-            "value": 35.90173424775273
-          }
-        },
-        "derivedMonthsOfSupply": {
-          "id": "ACTLISCOUUS / (EXHOSLUSM495S / 12)",
-          "n": 13,
-          "last": {
-            "date": "2026-07-01",
-            "value": 3.328823645320197
-          }
+        "https://www.census.gov": {
+          "allowed": true,
+          "matchedRule": null,
+          "rules": 1
         }
       },
-      "failed": {},
-      "ok": true
-    },
-    "fred": {
-      "ok": true,
-      "cors": null,
-      "series": {
-        "mortgage30yr": {
-          "ok": true,
-          "header": [
-            "observation_date",
-            "MORTGAGE30US"
-          ],
-          "n": 626,
-          "last": {
-            "date": "2026-08-20",
-            "value": 6.65
-          }
+      "probes": {
+        "bls_ics": {
+          "ok": false,
+          "error": "HTTP 403 Forbidden — Access Denied \n \n   \n    .centerDiv\n    {\n      width: 60%;\n      height:200px;\n      margin: 0 auto;\n      background-color:#FFFFFF ;\n    }\n   \n \n \n                    Bureau of Labor Statistics  \n  "
         },
-        "consumerSentiment": {
-          "ok": true,
-          "header": [
-            "observation_date",
-            "UMCSENT"
-          ],
-          "n": 143,
-          "last": {
-            "date": "2026-06-01",
-            "value": 49.5
-          }
+        "bls_sched_26": {
+          "ok": false,
+          "error": "HTTP 403 Forbidden — Access Denied \n \n   \n    .centerDiv\n    {\n      width: 60%;\n      height:200px;\n      margin: 0 auto;\n      background-color:#FFFFFF ;\n    }\n   \n \n \n                    Bureau of Labor Statistics  \n  "
         },
-        "revolvingCredit": {
-          "ok": true,
-          "header": [
-            "observation_date",
-            "REVOLSL"
-          ],
-          "n": 143,
-          "last": {
-            "date": "2026-06-01",
-            "value": 1351.0691399999998
-          }
+        "bls_sched_27": {
+          "ok": false,
+          "error": "HTTP 403 Forbidden — Access Denied \n \n   \n    .centerDiv\n    {\n      width: 60%;\n      height:200px;\n      margin: 0 auto;\n      background-color:#FFFFFF ;\n    }\n   \n \n \n                    Bureau of Labor Statistics  \n  "
         },
-        "creditCardDelinquency": {
+        "census_list": {
           "ok": true,
-          "header": [
-            "observation_date",
-            "DRCCLACBS"
-          ],
-          "n": 47,
-          "last": {
-            "date": "2026-01-01",
-            "value": 2.92
-          }
+          "cors": null,
+          "bytes": 91749,
+          "kind": "html",
+          "vevents": 0,
+          "sampleEvent": null,
+          "htmlRowSample": [
+            "<tr height=\"20\"> <td height=\"20\"><a href=\"/manufacturing/m3/\">Full Report - Manufacturers' Shipments, Inventories and Orders</a></td> <td sorttable_customkey=\"202601071000\">January 7, 2026</td> <td>10:00 AM</td> <td>October 2025</td> <td class=\"hiden\">A202601071000</td> <td class=\"hiden\">A202510</td> </tr>",
+            "<tr height=\"20\"> <td height=\"20\"><a href=\"/foreign-trade/\">U.S. International Trade in Goods and Services</a></td> <td sorttable_customkey=\"202601080830\">January 8, 2026</td> <td>8:30 AM</td> <td>October 2025</td> <td class=\"hiden\">A202601080830</td> <td class=\"hiden\">A202510</td> </tr>",
+            "<tr height=\"20\"> <td height=\"20\"><a href=\"/wholesale/index.html\">Monthly Wholesale Trade: Sales and Inventories</a></td> <td sorttable_customkey=\"202601081000\">January 8, 2026</td> <td>10:00 AM</td> <td>October 2025</td> <td class=\"hiden\">A202601081000</td> <td class=\"hiden\">A202510</td> </tr>"
+          ]
         },
-        "caseShiller": {
+        "census_ics": {
           "ok": true,
-          "header": [
-            "observation_date",
-            "CSUSHPINSA"
-          ],
-          "n": 142,
-          "last": {
-            "date": "2026-05-01",
-            "value": 335.104
-          }
+          "cors": null,
+          "bytes": 76530,
+          "kind": "html",
+          "vevents": 0,
+          "sampleEvent": null,
+          "htmlRowSample": []
         },
-        "existingHomeSales": {
+        "census_json": {
           "ok": true,
-          "header": [
-            "observation_date",
-            "EXHOSLUSM495S"
-          ],
-          "n": 13,
-          "last": {
-            "date": "2026-07-01",
-            "value": 4060000
-          }
+          "cors": null,
+          "bytes": 76530,
+          "kind": "html",
+          "vevents": 0,
+          "sampleEvent": null,
+          "htmlRowSample": []
         }
-      }
+      },
+      "parsed": 169,
+      "ok": true
     },
     "zillow": {
       "attribution": "Zillow Group, Zillow Research public data",
@@ -432,6 +276,162 @@
           "last": {
             "date": "2026-06-01",
             "value": 371427
+          }
+        }
+      },
+      "failed": {},
+      "ok": true
+    },
+    "fred": {
+      "ok": true,
+      "cors": null,
+      "series": {
+        "mortgage30yr": {
+          "ok": true,
+          "header": [
+            "observation_date",
+            "MORTGAGE30US"
+          ],
+          "n": 626,
+          "last": {
+            "date": "2026-08-20",
+            "value": 6.65
+          }
+        },
+        "consumerSentiment": {
+          "ok": true,
+          "header": [
+            "observation_date",
+            "UMCSENT"
+          ],
+          "n": 143,
+          "last": {
+            "date": "2026-06-01",
+            "value": 49.5
+          }
+        },
+        "revolvingCredit": {
+          "ok": true,
+          "header": [
+            "observation_date",
+            "REVOLSL"
+          ],
+          "n": 143,
+          "last": {
+            "date": "2026-06-01",
+            "value": 1351.0691399999998
+          }
+        },
+        "creditCardDelinquency": {
+          "ok": true,
+          "header": [
+            "observation_date",
+            "DRCCLACBS"
+          ],
+          "n": 47,
+          "last": {
+            "date": "2026-01-01",
+            "value": 2.92
+          }
+        },
+        "caseShiller": {
+          "ok": true,
+          "header": [
+            "observation_date",
+            "CSUSHPINSA"
+          ],
+          "n": 142,
+          "last": {
+            "date": "2026-05-01",
+            "value": 335.104
+          }
+        },
+        "existingHomeSales": {
+          "ok": true,
+          "header": [
+            "observation_date",
+            "EXHOSLUSM495S"
+          ],
+          "n": 13,
+          "last": {
+            "date": "2026-07-01",
+            "value": 4060000
+          }
+        }
+      }
+    },
+    "resale": {
+      "resolved": {
+        "activeListings": {
+          "id": "ACTLISCOUUS",
+          "n": 121,
+          "last": {
+            "date": "2026-07-01",
+            "value": 1126252
+          }
+        },
+        "newListings": {
+          "id": "NEWLISCOUUS",
+          "n": 121,
+          "last": {
+            "date": "2026-07-01",
+            "value": 423732
+          }
+        },
+        "medianDaysOnMarket": {
+          "id": "MEDDAYONMARUS",
+          "n": 121,
+          "last": {
+            "date": "2026-07-01",
+            "value": 57
+          }
+        },
+        "priceReducedCount": {
+          "id": "PRIREDCOUUS",
+          "n": 121,
+          "last": {
+            "date": "2026-07-01",
+            "value": 404344
+          }
+        },
+        "medianListPrice": {
+          "id": "MEDLISPRIUS",
+          "n": 121,
+          "last": {
+            "date": "2026-07-01",
+            "value": 428950
+          }
+        },
+        "existingMonthsSupply": {
+          "id": "HOSSUPUSM673N",
+          "n": 13,
+          "last": {
+            "date": "2026-07-01",
+            "value": 4.6
+          }
+        },
+        "existingHomeSales": {
+          "id": "EXHOSLUSM495S",
+          "n": 13,
+          "last": {
+            "date": "2026-07-01",
+            "value": 4060000
+          }
+        },
+        "priceReducedShare": {
+          "id": "PRIREDCOUUS / ACTLISCOUUS",
+          "n": 121,
+          "last": {
+            "date": "2026-07-01",
+            "value": 35.90173424775273
+          }
+        },
+        "derivedMonthsOfSupply": {
+          "id": "ACTLISCOUUS / (EXHOSLUSM495S / 12)",
+          "n": 13,
+          "last": {
+            "date": "2026-07-01",
+            "value": 3.328823645320197
           }
         }
       },
