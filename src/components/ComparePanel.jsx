@@ -166,13 +166,13 @@ export default function ComparePanel({ bundle, zillowMeta, loading }) {
           </div>
         </div>
         <div className="table-wrap">
-          <table>
+          <table aria-label="Current readings from Redfin, Realtor.com and Zillow">
             <thead>
               <tr>
-                <th>Metric</th>
-                {SOURCES.map((s) => (<th className="num" key={s.key}>{s.label}</th>))}
-                <th className="num">Spread</th>
-                <th>Comparability</th>
+                <th scope="col">Metric</th>
+                {SOURCES.map((s) => (<th scope="col" className="num" key={s.key}>{s.label}</th>))}
+                <th scope="col" className="num">Spread</th>
+                <th scope="col">Comparability</th>
               </tr>
             </thead>
             <tbody>
@@ -216,8 +216,8 @@ export default function ComparePanel({ bundle, zillowMeta, loading }) {
           </div>
         </div>
         <div className="table-wrap">
-          <table>
-            <thead><tr><th>Source</th><th className="num">Forecast</th><th>Horizon</th><th>Availability</th></tr></thead>
+          <table aria-label="One-year home value forecasts by source">
+            <thead><tr><th scope="col">Source</th><th scope="col" className="num">Forecast</th><th scope="col">Horizon</th><th scope="col">Availability</th></tr></thead>
             <tbody>
               <tr>
                 <td>Zillow &mdash; Home Value Forecast (ZHVF)</td>

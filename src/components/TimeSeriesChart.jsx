@@ -21,6 +21,30 @@ import {
 } from 'recharts';
 import { alignSeries } from '../lib/stats.js';
 
+/**
+ * Vertical nudge for a direct end-label, so labels for series ending at similar
+ * values do not overlap. Ranks the final values and offsets by rank; 13px is one
+ * line at 11px type.
+ */
+function endLabelOffset(seriesIndex, rows, series) {
+  if (!rows.length) return 0;
+  const lastRow = rows[rows.length - 1];
+  const finals = series
+    .map((s, i) => ({ i, v: lastRow[s.key] }))
+    .filter((x) => Number.isFinite(x.v));
+  if (finals.length < 2) return 0;
+  // Only separate labels that are actually close together.
+  const values = finals.map((f) => f.v);
+  const span = Math.max(...values) - Math.min(...values);
+  const range = Math.abs(span) || 1;
+  const mine = finals.find((f) => f.i === seriesIndex);
+  if (!mine) return 0;
+  const crowded = finals.filter((f) => f.i !== seriesIndex && Math.abs(f.v - mine.v) < range * 0.08);
+  if (!crowded.length) return 0;
+  const order = [...finals].sort((a, b) => b.v - a.v).findIndex((f) => f.i === seriesIndex);
+  return (order - (finals.length - 1) / 2) * 13;
+}
+
 /** Fixed categorical slot order. Never cycled; a 6th series is a design smell. */
 const SLOTS = ['--series-1', '--series-2', '--series-3', '--series-4', '--series-5'];
 
@@ -28,12 +52,17 @@ export function seriesColor(i) {
   return `var(${SLOTS[Math.min(i, SLOTS.length - 1)]})`;
 }
 
+/**
+ * `Jul 16` on a twelve-year axis reads as a day of the month, not a year. Above
+ * ~4 years of span the tick becomes the bare year; tooltips always spell the
+ * year out, where there is room for it.
+ */
 function formatDate(iso, granularity = 'month') {
   const d = new Date(`${iso}T00:00:00`);
   if (Number.isNaN(d.getTime())) return iso;
-  return granularity === 'year'
-    ? String(d.getFullYear())
-    : d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+  if (granularity === 'year') return String(d.getFullYear());
+  if (granularity === 'long') return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
 }
 
 export function formatValue(v, { unit = '', decimals = 1, compact = false } = {}) {
@@ -54,7 +83,7 @@ function ChartTooltip({ active, payload, label, series, unit, decimals }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="tooltip">
-      <div className="tooltip-date">{formatDate(label)}</div>
+      <div className="tooltip-date">{formatDate(label, 'long')}</div>
       {payload.map((p) => {
         const meta = series.find((s) => s.key === p.dataKey);
         return (
@@ -100,6 +129,17 @@ export default function TimeSeriesChart({
 
   const withData = series.filter((s) => (s.data || []).some((p) => Number.isFinite(p.value)));
 
+  // Axis ticks lose the month once a chart covers several years.
+  const spansYears = useMemo(() => {
+    if (rows.length < 2) return false;
+    const first = new Date(`${rows[0].date}T00:00:00Z`).getTime();
+    const last = new Date(`${rows[rows.length - 1].date}T00:00:00Z`).getTime();
+    return (last - first) / 86_400_000 > 4 * 365;
+  }, [rows]);
+
+  // Y-axis ticks want fewer decimals than the tooltip, but not zero.
+  const axisDecimals = decimals >= 2 ? 1 : decimals;
+
   if (rows.length === 0 || withData.length === 0) {
     return <p className="small muted" style={{ padding: '28px 0', textAlign: 'center' }}>No observations available for this chart.</p>;
   }
@@ -132,7 +172,7 @@ export default function TimeSeriesChart({
           <CartesianGrid vertical={false} />
           <XAxis
             dataKey="date"
-            tickFormatter={(d) => formatDate(d)}
+            tickFormatter={(d) => formatDate(d, spansYears ? 'year' : 'month')}
             minTickGap={38}
             tickLine={false}
             axisLine={{ stroke: 'var(--axis)' }}
@@ -140,10 +180,13 @@ export default function TimeSeriesChart({
           {/* One axis. Always. */}
           <YAxis
             width={56}
+            // Ticks inherit the chart's precision. Hardcoding 0 decimals made
+            // five distinct gridlines render as "2%, 2%, 3%, 3%, 4%" — and
+            // "4M, 4.1M, 4.1M, 4.2M, 4.3M" under compactAxis.
             tickFormatter={(v) =>
               compactAxis
-                ? new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(v)
-                : formatValue(v, { unit, decimals: 0 })
+                ? new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 2 }).format(v)
+                : formatValue(v, { unit, decimals: axisDecimals })
             }
             tickLine={false}
             axisLine={false}
@@ -208,13 +251,18 @@ export default function TimeSeriesChart({
                     // Text wears text tokens, not the series color; the line
                     // beside it already carries identity.
                     fill="var(--text-secondary)"
-                    formatter={(v) => (v === null ? '' : formatValue(v, { unit, decimals: 0 }))}
+                    formatter={(v) => (v === null ? '' : formatValue(v, { unit, decimals }))}
                     content={(props) => {
                       const { x, y, value, index } = props;
+                      const seriesIndex = i;
                       if (rows[index]?.date !== lastDate || !Number.isFinite(value)) return null;
+                      // Nudge apart so two series ending at nearly the same
+                      // value do not render on top of each other — measured
+                      // overlaps of 32x9px on the permits/starts chart.
+                      const dy = endLabelOffset(seriesIndex, rows, series);
                       return (
-                        <text x={x + 6} y={y} dy={4} fontSize={11} fill="var(--text-secondary)">
-                          {formatValue(value, { unit, decimals: 0 })}
+                        <text x={x + 6} y={y + dy} dy={4} fontSize={11} fill="var(--text-secondary)">
+                          {formatValue(value, { unit, decimals })}
                         </text>
                       );
                     }}

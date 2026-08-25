@@ -114,7 +114,12 @@ export default function App() {
     mode,
   });
 
-  const scope = selectedState ? selectedState.name : 'United States';
+  // Only live mode actually scopes by state. The snapshot is national and demo
+  // is synthetic, so interpolating the selected state into card subtitles
+  // labelled identical national numbers as California's — the same values, a
+  // different title. Say what is really being shown.
+  const scope = mode === 'live' && selectedState ? selectedState.name : 'United States';
+  const stateScopingActive = mode === 'live' && Boolean(selectedState);
 
   const caseShillerYoY = useMemo(() => yoySeries(fred.data?.caseShiller), [fred.data]);
 
@@ -159,6 +164,16 @@ export default function App() {
         </div>
       </header>
 
+      {mode === 'snapshot' && !snapshotAge && !anyLoading && (
+        <div className="notice error">
+          <strong>No data snapshot loaded</strong>
+          The dashboard reads a JSON snapshot published alongside the site, and none was found. On a local checkout
+          run <code>npm run data</code> to fetch one; on the deployed site this means the &ldquo;Refresh data and
+          deploy&rdquo; workflow has not completed yet. You can also switch the Data selector to Demo to explore the
+          interface with synthetic figures.
+        </div>
+      )}
+
       {mode === 'snapshot' && snapshotAge && (
         <div className="notice info" role="status">
           <strong>Reading the published data snapshot</strong>
@@ -189,7 +204,13 @@ export default function App() {
       <div className="filterbar">
         <div className="field">
           <label htmlFor="state">Geography</label>
-          <select id="state" value={stateFips} onChange={(e) => setStateFips(e.target.value)}>
+          <select
+            id="state"
+            value={stateFips}
+            onChange={(e) => setStateFips(e.target.value)}
+            disabled={mode !== 'live'}
+            title={mode !== 'live' ? 'State scoping needs Live APIs mode and a Census key' : undefined}
+          >
             <option value="">United States (national)</option>
             {STATES.map((s) => (
               <option key={s.fips} value={s.fips}>{s.name}</option>
@@ -207,7 +228,7 @@ export default function App() {
         <div className="spacer" />
         <div className="small muted" style={{ maxWidth: '46ch', textAlign: 'right' }}>
           {mode === 'snapshot'
-            ? 'The published snapshot is national. Pick "Live APIs" with a Census key for state-level resale and unemployment panels.'
+            ? 'The published snapshot is national, so the state selector is disabled here. Switch to "Live APIs" with a Census key for state-level resale and unemployment panels.'
             : demo
             ? 'Demo mode ignores the geography selection — the synthetic series are the same for every region.'
             : selectedState
@@ -216,13 +237,41 @@ export default function App() {
         </div>
       </div>
 
-      <nav className="tabs" role="tablist">
-        {TABS.map((t) => (
-          <button key={t.id} role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}>
+      {/* Tabs follow the ARIA authoring practice: roving tabindex, arrow-key
+          navigation, and each panel labelled by its tab. Previously these were
+          role="tab" with none of the behaviour, so arrow keys did nothing and a
+          screen reader got no confirmation that the view had changed. */}
+      <nav className="tabs" role="tablist" aria-label="Dashboard sections">
+        {TABS.map((t, i) => (
+          <button
+            key={t.id}
+            id={`tab-${t.id}`}
+            role="tab"
+            aria-selected={tab === t.id}
+            aria-controls={`panel-${t.id}`}
+            tabIndex={tab === t.id ? 0 : -1}
+            onClick={() => setTab(t.id)}
+            onKeyDown={(e) => {
+              const keys = { ArrowRight: 1, ArrowLeft: -1 };
+              if (e.key in keys) {
+                e.preventDefault();
+                const next = (i + keys[e.key] + TABS.length) % TABS.length;
+                setTab(TABS[next].id);
+                document.getElementById(`tab-${TABS[next].id}`)?.focus();
+              } else if (e.key === 'Home' || e.key === 'End') {
+                e.preventDefault();
+                const t2 = e.key === 'Home' ? TABS[0] : TABS[TABS.length - 1];
+                setTab(t2.id);
+                document.getElementById(`tab-${t2.id}`)?.focus();
+              }
+            }}
+          >
             {t.label}
           </button>
         ))}
       </nav>
+
+      <main role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} tabIndex={-1}>
 
       {tab === 'overview' && (
         <div className="stack">
@@ -565,12 +614,12 @@ export default function App() {
         <div className="grid">
           <ChartCard
             title="Unemployment rate"
-            subtitle={selectedState ? `National and ${selectedState.name}` : 'National, seasonally adjusted'}
+            subtitle={stateScopingActive ? `National and ${selectedState.name}` : 'National, seasonally adjusted'}
             meta={bls.meta} error={bls.error} loading={bls.loading}
             unit="%"
             series={[
               { key: 'us', label: 'United States', data: bls.data?.unemploymentRate || [] },
-              ...(selectedState
+              ...(stateScopingActive
                 ? [{ key: 'st', label: selectedState.name, data: bls.data?.stateUnemploymentRate || [] }]
                 : []),
             ]}
@@ -580,7 +629,7 @@ export default function App() {
               unit="%" height={250}
               series={[
                 { key: 'us', label: 'United States', data: bls.data?.unemploymentRate || [] },
-                ...(selectedState
+                ...(stateScopingActive
                   ? [{ key: 'st', label: selectedState.name, data: bls.data?.stateUnemploymentRate || [] }]
                   : []),
               ]}
@@ -746,6 +795,7 @@ export default function App() {
       )}
       {tab === "sources" && <DataSourcesPanel census={census} bls={bls} fred={fred} redfin={redfin} resale={resale} zillow={zillow} demo={demo} />}
       {tab === 'settings' && <SettingsPanel onApply={reload} />}
+      </main>
     </div>
   );
 }

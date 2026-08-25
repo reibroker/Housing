@@ -22,6 +22,12 @@ function ageLabel(ms) {
 
 export function SourceBadge({ meta }) {
   if (!meta) return null;
+  // A snapshot is not "live". It is real data fetched server-side at a known
+  // time, and saying so is the difference between a reader trusting a number
+  // that is three hours old and one that is three months old.
+  if (meta.via === 'snapshot' || meta.snapshot) {
+    return <span className="badge" title={`Fetched server-side ${ageLabel(meta.ageMs)}`}>snapshot &middot; {ageLabel(meta.ageMs)}</span>;
+  }
   if (meta.synthetic || meta.via === 'demo') {
     return <span className="badge warn" title="Synthetic data — nothing was fetched">demo</span>;
   }
@@ -52,6 +58,19 @@ export default function ChartCard({
 
   const hasData = series.some((s) => (s.data || []).some((p) => Number.isFinite(p.value)));
 
+  // Spoken description of the chart: what it plots, over what span, ending where.
+  const chartSummary = (() => {
+    if (!hasData) return `${title} — no data available`;
+    const parts = series
+      .filter((s) => (s.data || []).some((p) => Number.isFinite(p.value)))
+      .map((s) => {
+        const pts = (s.data || []).filter((p) => Number.isFinite(p.value));
+        const last = pts[pts.length - 1];
+        return `${s.label}, latest ${formatValue(last.value, { unit, decimals })} in ${last.date.slice(0, 7)}`;
+      });
+    return `${title}. Line chart. ${parts.join('. ')}. Use the table view button for all values.`;
+  })();
+
   return (
     <section className={`card${full ? ' full' : ''}`}>
       <div className="card-head">
@@ -67,9 +86,12 @@ export default function ChartCard({
               className="tiny ghost"
               onClick={() => setShowTable((v) => !v)}
               aria-pressed={showTable}
-              title="Every chart has a table equivalent"
+              // The label stays fixed so aria-pressed carries the state. A
+              // swapping label plus aria-pressed announced "Chart, pressed" —
+              // the opposite of what the control does.
+              title="Show this chart's values as a table"
             >
-              {showTable ? 'Chart' : 'Table'}
+              Table view
             </button>
           )}
         </div>
@@ -84,9 +106,11 @@ export default function ChartCard({
 
       {/* Refetch holds the previous render at reduced opacity rather than
           flashing a skeleton, so nothing jumps. */}
-      <div className={loading && hasData ? 'refreshing' : undefined}>
+      {/* Charts are SVG with no accessible content of their own, so the card
+          supplies the text alternative and the table view supplies the values. */}
+      <div className={loading && hasData ? 'refreshing' : undefined} role="group" aria-label={chartSummary}>
         {showTable && hasData ? (
-          <DataTable series={series} unit={unit} decimals={decimals} />
+          <DataTable series={series} unit={unit} decimals={decimals} title={title} />
         ) : (
           children
         )}
@@ -102,7 +126,7 @@ export default function ChartCard({
 }
 
 /** The table twin. Newest first, because that is what people look for. */
-function DataTable({ series, unit, decimals }) {
+function DataTable({ series, unit, decimals, title }) {
   const dates = new Set();
   series.forEach((s) => (s.data || []).forEach((p) => Number.isFinite(p.value) && dates.add(p.date)));
   const sorted = [...dates].sort().reverse().slice(0, 60);
@@ -111,12 +135,14 @@ function DataTable({ series, unit, decimals }) {
 
   return (
     <div className="table-wrap" style={{ maxHeight: 300, overflowY: 'auto' }}>
-      <table>
+      {/* Six identically-shaped tables can be open at once; without a name
+          each is announced as "table, 3 columns" and nothing distinguishes them. */}
+      <table aria-label={title ? `${title} — data table` : undefined}>
         <thead>
           <tr>
-            <th>Period</th>
+            <th scope="col">Period</th>
             {series.map((s) => (
-              <th className="num" key={s.key}>{s.label}</th>
+              <th scope="col" className="num" key={s.key}>{s.label}</th>
             ))}
           </tr>
         </thead>

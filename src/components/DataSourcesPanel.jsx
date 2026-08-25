@@ -69,9 +69,9 @@ export default function DataSourcesPanel({ census, bls, fred, redfin, resale, zi
           marked as sending no CORS headers will fail.
         </p>
         <div className="table-wrap">
-          <table>
+          <table aria-label="Data source status">
             <thead>
-              <tr><th>Source</th><th>CORS</th><th>API key</th><th>Status</th><th>Detail</th></tr>
+              <tr><th scope="col">Source</th><th scope="col">CORS</th><th scope="col">API key</th><th scope="col">Status</th><th scope="col">Detail</th></tr>
             </thead>
             <tbody>
               <StatusRow
@@ -137,9 +137,9 @@ export default function DataSourcesPanel({ census, bls, fred, redfin, resale, zi
           time slice and matches against an ordered candidate list. This table shows what actually matched.
         </p>
         <div className="table-wrap">
-          <table>
+          <table aria-label="Census series resolution">
             <thead>
-              <tr><th>Chart series</th><th>Matched code</th><th className="num">Points</th><th>Candidates tried</th></tr>
+              <tr><th scope="col">Chart series</th><th scope="col">Matched code</th><th scope="col" className="num">Points</th><th scope="col">Candidates tried</th></tr>
             </thead>
             <tbody>
               {Object.entries(CENSUS_SERIES).map(([key, spec]) => {
@@ -169,9 +169,9 @@ export default function DataSourcesPanel({ census, bls, fred, redfin, resale, zi
           <details>
             <summary>Browse every series Census actually returned ({Object.values(raw).reduce((n, a) => n + a.length, 0)} total)</summary>
             <div className="table-wrap" style={{ maxHeight: 320, overflowY: 'auto', marginTop: 10 }}>
-              <table>
+              <table aria-label="Every series Census returned">
                 <thead>
-                  <tr><th>Dataset</th><th>category_code</th><th>data_type_code</th><th>SA</th><th className="num">Points</th></tr>
+                  <tr><th scope="col">Dataset</th><th scope="col">category_code</th><th scope="col">data_type_code</th><th scope="col">SA</th><th scope="col" className="num">Points</th></tr>
                 </thead>
                 <tbody>
                   {Object.entries(raw).flatMap(([ds, list]) =>
@@ -200,8 +200,8 @@ export default function DataSourcesPanel({ census, bls, fred, redfin, resale, zi
       <section className="card">
         <div className="card-head"><h3>Series reference</h3></div>
         <div className="table-wrap">
-          <table>
-            <thead><tr><th>Series</th><th>Identifier</th><th>Unit</th><th>Publisher</th></tr></thead>
+          <table aria-label="Series reference">
+            <thead><tr><th scope="col">Series</th><th scope="col">Identifier</th><th scope="col">Unit</th><th scope="col">Publisher</th></tr></thead>
             <tbody>
               {Object.entries(BLS_SERIES).map(([k, s]) => (
                 <tr key={k}><td>{s.label}</td><td><code className="tiny-text">{s.id}</code></td><td className="small">{s.unit}</td><td className="small">BLS</td></tr>

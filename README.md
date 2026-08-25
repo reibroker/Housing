@@ -268,7 +268,7 @@ to each panel:
 npm run build && node scripts/smoke-test.mjs
 ```
 
-48 checks in three passes.
+63 checks in three passes.
 
 **Live pass** — the built app in headless Chromium with every upstream host intercepted and
 served synthetic-but-correctly-shaped payloads. Asserts: no console errors or page exceptions,

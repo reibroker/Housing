@@ -26,13 +26,13 @@ export default function RiskBreakdown({ result }) {
         <>
           <h4 style={{ margin: '4px 0 8px', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>By category</h4>
           <div className="table-wrap">
-            <table>
+            <table aria-label="Indicator detail, sorted by contribution">
               <thead>
                 <tr>
-                  <th>Category</th>
-                  <th className="num">Indicators</th>
-                  <th className="num">Weight</th>
-                  <th style={{ width: '34%' }}>Category score</th>
+                  <th scope="col">Category</th>
+                  <th scope="col" className="num">Indicators</th>
+                  <th scope="col" className="num">Weight</th>
+                  <th scope="col" style={{ width: '34%' }}>Category score</th>
                 </tr>
               </thead>
               <tbody>
@@ -56,16 +56,16 @@ export default function RiskBreakdown({ result }) {
         Indicator detail &mdash; sorted by contribution to the total
       </h4>
       <div className="table-wrap">
-        <table>
+        <table aria-label="Indicator detail, sorted by contribution">
           <thead>
             <tr>
-              <th>Indicator</th>
-              <th className="num">Latest</th>
-              <th className="num">0-score at</th>
-              <th className="num">100-score at</th>
-              <th style={{ minWidth: 150 }}>Sub-score</th>
-              <th className="num">Weight</th>
-              <th className="num">Adds</th>
+              <th scope="col">Indicator</th>
+              <th scope="col" className="num">Latest</th>
+              <th scope="col" className="num">0-score at</th>
+              <th scope="col" className="num">100-score at</th>
+              <th scope="col" style={{ minWidth: 150 }}>Sub-score</th>
+              <th scope="col" className="num">Weight</th>
+              <th scope="col" className="num">Adds</th>
             </tr>
           </thead>
           <tbody>

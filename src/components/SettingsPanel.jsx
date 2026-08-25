@@ -87,9 +87,9 @@ export default function SettingsPanel({ onApply }) {
           provider&rsquo;s published limit so you get a clear message here instead of an opaque error from the API.
         </p>
         <div className="table-wrap">
-          <table>
+          <table aria-label="API rate limits">
             <thead>
-              <tr><th>Source</th><th className="num">Used today</th><th className="num">Daily budget</th><th className="num">Min. spacing</th></tr>
+              <tr><th scope="col">Source</th><th scope="col" className="num">Used today</th><th scope="col" className="num">Daily budget</th><th scope="col" className="num">Min. spacing</th></tr>
             </thead>
             <tbody>
               {quotas.map((q) => (

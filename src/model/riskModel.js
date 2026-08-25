@@ -43,7 +43,7 @@
  * updates with it.
  */
 
-import { latest, pctChange, absChange, trailingMean, scaleToRisk, dropNulls, sortByDate } from '../lib/stats.js';
+import { latest, pctChange, absChange, trailingMean, scaleToRisk, dropNulls, sortByDate, medianSpacingDays } from '../lib/stats.js';
 
 /** Helper: latest value of a series, or null. */
 const val = (s) => latest(s)?.value ?? null;
@@ -59,12 +59,29 @@ const asOf = (s) => latest(s)?.date ?? null;
  * Indicators that can fall back to a live source do so automatically, and say
  * which one they used.
  */
-const STALE_AFTER_DAYS = 75;
+/**
+ * Staleness is judged against each series' OWN publication cadence.
+ *
+ * A fixed 75-day rule is wrong for a quarterly series: credit-card delinquency
+ * and the vacancy rates cannot be fresher than roughly 90-120 days by
+ * construction, so a flat threshold marks healthy series stale forever while
+ * letting a stalled weekly series pass. Threshold = three intervals, floored at
+ * 45 days — the same rule the pipeline uses for its freshness table.
+ */
+function staleAfterDays(series) {
+  const spacing = medianSpacingDays(series);
+  return spacing ? Math.max(45, Math.round(spacing * 3)) : 100;
+}
+
+function ageDays(series) {
+  const l = latest(series);
+  if (!l) return null;
+  return (Date.now() - new Date(`${l.date}T00:00:00Z`).getTime()) / 86_400_000;
+}
 
 function isFresh(series) {
-  const l = latest(series);
-  if (!l) return false;
-  return (Date.now() - new Date(`${l.date}T00:00:00Z`).getTime()) / 86_400_000 <= STALE_AFTER_DAYS;
+  const age = ageDays(series);
+  return age !== null && age <= staleAfterDays(series);
 }
 
 /** Year-over-year percent change of a level series, as its own series. */
@@ -90,10 +107,36 @@ function yoyOf(series, periods = 12) {
  * different scales — reusing one source's calibration on another's series would
  * silently produce a wrong sub-score.
  */
+/** A source needs enough history to be judged against, not just a latest value. */
+const MIN_USABLE_OBSERVATIONS = 24;
+
+/**
+ * Rank sources on freshness FIRST, then on depth of history.
+ *
+ * Both properties matter and they trade off: FRED truncated the NAR series to 13
+ * observations (current, but no context), while Redfin has 173 observations that
+ * stopped three months ago. For a current-conditions gauge recency wins — a
+ * stale number is wrong now, whereas a thin one is merely hard to contextualise
+ * — so the order is:
+ *
+ *   fresh + deep  >  fresh  >  stale + deep  >  anything
+ *
+ * Requiring depth outright (an earlier attempt) inverted this and quietly put
+ * three-month-old Redfin figures back in front of current ones. Indicators built
+ * on year-over-year change are protected anyway: a 13-point input yields a
+ * one-point YoY series, which sorts to the bottom on depth by construction.
+ */
 function pickSource(options) {
   const present = options.filter((o) => o.series?.length && Number.isFinite(latest(o.series)?.value));
   if (!present.length) return null;
-  const chosen = present.find((o) => isFresh(o.series)) || present[0];
+
+  const rank = (o) => {
+    const fresh = isFresh(o.series) ? 0 : 2;
+    const deep = o.series.length >= MIN_USABLE_OBSERVATIONS ? 0 : 1;
+    return fresh + deep;
+  };
+  const chosen = present.reduce((best, o) => (rank(o) < rank(best) ? o : best), present[0]);
+
   return {
     value: latest(chosen.series).value,
     asOf: asOf(chosen.series),
@@ -112,11 +155,31 @@ function pickSource(options) {
 function unemploymentDrift(series) {
   const clean = dropNulls(sortByDate(series || []));
   if (clean.length < 15) return null;
-  const recent3 = trailingMean(clean, 3);
-  const priorYear = clean.slice(Math.max(0, clean.length - 15), clean.length - 3);
-  if (!recent3 || priorYear.length === 0) return null;
-  const min = Math.min(...priorYear.map((p) => p.value));
-  return recent3 - min;
+
+  // The Sahm rule compares the current 3-month average against the MINIMUM OF
+  // THE 3-MONTH AVERAGES over the prior twelve months — not against the minimum
+  // of the raw monthly prints. Using raw minima is a one-sided upward bias,
+  // because a single noisy low month drags the floor down and can never drag it
+  // up. Measured across 97 computable months of the real series: mean absolute
+  // error 0.13pp, worst overstatement 2.73pp (2021-04). On a [0, 1.0] scale that
+  // is ~13 sub-points of systematic error.
+  const ma3 = clean.map((p, i) =>
+    i >= 2 ? { date: p.date, value: (clean[i].value + clean[i - 1].value + clean[i - 2].value) / 3 } : null
+  ).filter(Boolean);
+  if (ma3.length < 13) return null;
+
+  const current = ma3[ma3.length - 1];
+
+  // Window by CALENDAR DATE, not by array position. dropNulls has already
+  // removed gaps, so "12 observations back" silently becomes 13+ months
+  // whenever the series has an interior hole — and this series does (2025-10).
+  const cutoff = new Date(`${current.date}T00:00:00Z`);
+  cutoff.setUTCMonth(cutoff.getUTCMonth() - 12);
+  const cutoffIso = cutoff.toISOString().slice(0, 10);
+  const prior = ma3.filter((p) => p.date >= cutoffIso && p.date < current.date);
+  if (!prior.length) return null;
+
+  return current.value - Math.min(...prior.map((p) => p.value));
 }
 
 /**
@@ -132,10 +195,18 @@ function unemploymentDrift(series) {
  * indicator at 100 permanently.
  */
 function pipelineRatio(underConstruction, newHomeSales) {
-  const uc = val(underConstruction);
-  const sales = val(newHomeSales);
-  if (uc === null || sales === null || sales === 0) return null;
-  return uc / sales;
+  // Both legs must describe the SAME month. Taking latest() of each
+  // independently silently mixes periods the moment one series is revised or
+  // published ahead of the other.
+  const ucClean = dropNulls(sortByDate(underConstruction || []));
+  const salesByDate = new Map(dropNulls(sortByDate(newHomeSales || [])).map((p) => [p.date, p.value]));
+  for (let i = ucClean.length - 1; i >= 0; i--) {
+    const sales = salesByDate.get(ucClean[i].date);
+    if (Number.isFinite(sales) && sales !== 0) {
+      return { value: ucClean[i].value / sales, asOf: ucClean[i].date };
+    }
+  }
+  return null;
 }
 
 /**
@@ -162,8 +233,17 @@ export const INDICATORS = [
     extract: (d) =>
       pickSource([
         { series: d.redfin?.monthsOfSupply, low: 2.5, high: 8, note: 'Redfin' },
-        { series: d.resale?.existingMonthsSupply, low: 3, high: 8, note: "NAR months' supply via FRED" },
-        { series: d.resale?.derivedMonthsOfSupply, low: 2.5, high: 8, note: 'Realtor.com listings ÷ NAR sales pace' },
+        // NAR runs ~0.67 months above Redfin on the overlap (mean 4.24 vs 3.56
+        // across 11 shared months), so the whole band shifts rather than just
+        // its floor — otherwise switching source alone added ~0.7 points to the
+        // composite. NOTE the overlap is only 11 months: this is a level
+        // correction, not a fitted calibration.
+        { series: d.resale?.existingMonthsSupply, low: 3.2, high: 8.7, note: "NAR months' supply via FRED" },
+        // `derivedMonthsOfSupply` (listings ÷ sales pace) is deliberately NOT
+        // ranked here. It is a different construct from NAR's months' supply and
+        // read 16.9 sub-points apart from it on the same month, which meant the
+        // composite moved by 2.2 points depending on array order. Two
+        // incompatible definitions must not share one indicator.
       ]) || {},
   },
   {
@@ -180,7 +260,11 @@ export const INDICATORS = [
     extract: (d) =>
       pickSource([
         // Redfin: share of listings that CUT price this month (a flow).
-        { series: d.redfin?.priceDrops, low: 12, high: 30, note: 'Redfin, monthly price cuts' },
+        // Calibrated to the actual 173-month Redfin record: min 4.1, p25 8.5,
+        // median 11.6, max 19.96. The old [12, 30] put the all-time high at
+        // sub-score 44 and pinned 56% of history at 0 — a quarter of the
+        // historical line's weight, dead half the time.
+        { series: d.redfin?.priceDrops, low: 8, high: 20, note: 'Redfin, monthly price cuts' },
         // Realtor.com: share of active listings currently marked reduced (a
         // stock). Runs materially higher, so it gets its own calibration.
         { series: d.resale?.priceReducedShare, low: 18, high: 45, note: 'Realtor.com, listings currently reduced' },
@@ -245,10 +329,18 @@ export const INDICATORS = [
   // ---------------- New construction supply --------------------------------
   {
     key: 'newHomeMonthsSupply',
+    // Published monthly; flagged stale after roughly three missed periods.
+    staleAfterDays: 93,
     group: 'New construction',
     label: "New-home months' supply",
     unit: 'months',
-    weight: 0.08,
+    // Reduced from 0.08. This is algebraically 12 x forSale/sales while
+    // constructionPipeline is underConstruction/sales — the same denominator,
+    // measured r = 0.809. At their old weights the pair put 0.15 of the model on
+    // one series and contributed 28% of the score. constructionPipeline is the
+    // stronger of the two (committed supply rather than a subset), so it keeps
+    // the larger share.
+    weight: 0.05,
     source: 'Census (New Home Sales)',
     low: 4,
     high: 10,
@@ -258,26 +350,27 @@ export const INDICATORS = [
   },
   {
     key: 'constructionPipeline',
+    // Published monthly; flagged stale after roughly three missed periods.
+    staleAfterDays: 93,
     group: 'New construction',
     label: 'Construction pipeline, in years of new-home sales',
     unit: 'years',
-    weight: 0.07,
+    weight: 0.08,
     source: 'Census (Residential Construction + New Home Sales)',
     low: 1.0,
     high: 2.5,
     rationale:
       'Units under construction divided by the annualized new-home sales rate: how long the committed pipeline would take to absorb at today\'s pace. It measures supply that must be delivered regardless of demand, which is what turns a slowdown into price cuts.',
-    extract: (d) => ({
-      value: pipelineRatio(d.census?.underConstruction, d.census?.newHomeSales),
-      asOf: asOf(d.census?.underConstruction),
-    }),
+    extract: (d) => pipelineRatio(d.census?.underConstruction, d.census?.newHomeSales) || {},
   },
   {
     key: 'permitsTrend',
+    // Published monthly; flagged stale after roughly three missed periods.
+    staleAfterDays: 93,
     group: 'New construction',
     label: 'Building permits, year-over-year change',
     unit: '%',
-    weight: 0.06,
+    weight: 0.07,
     source: 'Census (Building Permits)',
     low: 10,
     high: -25,
@@ -287,21 +380,27 @@ export const INDICATORS = [
   },
   {
     key: 'homeownerVacancy',
+    // Published quarterly; flagged stale after roughly three missed periods.
+    staleAfterDays: 280,
     group: 'New construction',
     label: 'Homeowner vacancy rate',
     unit: '%',
-    weight: 0.04,
+    weight: 0.05,
     source: 'Census (Housing Vacancies)',
+    // Observed range over the loaded window is 0.70-1.90; 2.2 encoded the
+    // post-crash peak and capped the attainable sub-score at 79.
     low: 0.8,
-    high: 2.2,
+    high: 2.0,
     rationale:
-      'Empty owned homes are latent supply. The rate ran near 1.5-1.7% before 2006 and peaked near 2.9% in the crash; sustained increases signal genuine oversupply rather than a pause.',
+      'Empty owned homes are latent supply. The rate ran near 1.5-1.7% before 2006 and peaked near 2.9% in the crash; sustained increases signal genuine oversupply rather than a pause. Thresholds are set to the 12-year window the dashboard loads.',
     extract: (d) => ({ value: val(d.census?.homeownerVacancy), asOf: asOf(d.census?.homeownerVacancy) }),
   },
 
   // ---------------- Labour market (confirming) ------------------------------
   {
     key: 'unemploymentDrift',
+    // Published monthly; flagged stale after roughly three missed periods.
+    staleAfterDays: 93,
     group: 'Labour market',
     label: 'Unemployment rate drift (3-mo avg vs prior-year low)',
     unit: 'pp',
@@ -315,6 +414,8 @@ export const INDICATORS = [
   },
   {
     key: 'residentialJobs',
+    // Published monthly; flagged stale after roughly three missed periods.
+    staleAfterDays: 93,
     group: 'Labour market',
     label: 'Residential construction employment, year-over-year change',
     unit: '%',
@@ -335,6 +436,8 @@ export const INDICATORS = [
   // ---------------- Affordability and household finances -------------------
   {
     key: 'mortgageRate',
+    // Published weekly; flagged stale after roughly three missed periods.
+    staleAfterDays: 30,
     group: 'Affordability & credit',
     label: '30-year fixed mortgage rate, change vs 12 months ago',
     unit: 'pp',
@@ -348,28 +451,40 @@ export const INDICATORS = [
   },
   {
     key: 'consumerSentiment',
+    // Published monthly; flagged stale after roughly three missed periods.
+    staleAfterDays: 93,
     group: 'Affordability & credit',
     label: 'Consumer sentiment (U. Michigan)',
     unit: 'index',
     weight: 0.03,
     source: 'U. Michigan via FRED',
-    low: 95,
-    high: 55,
+    // UMich has printed at or below 55 for four consecutive months and its
+    // 143-month minimum is 44.8, so a `high` of 55 sat ABOVE the actual floor:
+    // the indicator was clamped at 100 and contributed a constant, carrying no
+    // information at all. 45 sits just under the record low, restoring
+    // discrimination across the current regime.
+    low: 90,
+    high: 45,
     rationale:
       'Buying a house is the largest discretionary commitment most households make, and they defer it when they feel insecure. Low sentiment thins the buyer pool even when rates and jobs look fine.',
     extract: (d) => ({ value: val(d.fred?.consumerSentiment), asOf: asOf(d.fred?.consumerSentiment) }),
   },
   {
     key: 'creditStress',
+    // Published quarterly; flagged stale after roughly three missed periods.
+    staleAfterDays: 280,
     group: 'Affordability & credit',
     label: 'Credit card delinquency rate',
     unit: '%',
     weight: 0.03,
     source: 'Federal Reserve via FRED',
+    // [2.0, 5.0] encoded the 2009 peak, but the app only loads 12 years, where
+    // the observed max is 3.22 — the top 59% of the range was unreachable in any
+    // data the user can see. Scaled to the visible window.
     low: 2.0,
-    high: 5.0,
+    high: 3.6,
     rationale:
-      'Households fall behind on cards well before they fall behind on a mortgage. Rising card delinquency is an early read on the balance-sheet stress that eventually produces distressed listings.',
+      'Households fall behind on cards well before they fall behind on a mortgage. Rising card delinquency is an early read on the balance-sheet stress that eventually produces distressed listings. Calibrated to the 12-year window the dashboard loads, not to the 2009 peak.',
     extract: (d) => ({ value: val(d.fred?.creditCardDelinquency), asOf: asOf(d.fred?.creditCardDelinquency) }),
   },
 ];
@@ -384,7 +499,11 @@ export const RISK_BANDS = [
 
 export function bandFor(score) {
   if (!Number.isFinite(score)) return null;
-  return RISK_BANDS.find((b) => score >= b.min && score <= b.max) || RISK_BANDS[RISK_BANDS.length - 1];
+  // Half-open intervals. The ranges share endpoints, so an inclusive test made
+  // every published boundary resolve to the LOWER band — 40 read "Moderate",
+  // 60 read "Elevated", 80 read "High", each one band off.
+  const last = RISK_BANDS[RISK_BANDS.length - 1];
+  return RISK_BANDS.find((b) => score >= b.min && (b === last ? score <= b.max : score < b.max)) || last;
 }
 
 /**
@@ -421,7 +540,14 @@ export function computeRiskScore(data) {
       if (Number.isFinite(got.low)) low = got.low;
       if (Number.isFinite(got.high)) high = got.high;
       sourceNote = got.sourceNote || null;
-      stale = Boolean(got.stale);
+      // pickSource reports its own; for the plain-extract indicators derive it
+      // from the observation date, so a quietly ageing series is never presented
+      // as current just because it never needed a fallback.
+      stale = got.stale !== undefined ? Boolean(got.stale) : false;
+      if (got.stale === undefined && observedAt) {
+        const age = (Date.now() - new Date(`${observedAt}T00:00:00Z`).getTime()) / 86_400_000;
+        stale = age > (Number.isFinite(ind.staleAfterDays) ? ind.staleAfterDays : 100);
+      }
     } catch (e) {
       // A malformed series must never take down the whole gauge.
       error = e.message;
@@ -512,37 +638,89 @@ export function computeRiskScore(data) {
  * a validated backtest.
  */
 export function historicalScore(data) {
-  const specs = [
-    { series: data.redfin?.monthsOfSupply, low: 2.5, high: 8, weight: 0.28 },
-    { series: data.redfin?.priceDrops, low: 12, high: 30, weight: 0.25 },
-    { series: data.redfin?.inventoryYoY, low: -10, high: 35, weight: 0.19 },
-    { series: data.redfin?.saleToListRatio, low: 101, high: 96, weight: 0.13 },
-    { series: data.bls?.unemploymentRate, low: 3.5, high: 7.5, weight: 0.15 },
-  ].filter((s) => s.series && s.series.length);
+  /**
+   * Back-computed score, for eyeballing whether the gauge has led price turns.
+   *
+   * REWRITTEN after an audit found the old version was not comparable to the
+   * live gauge in three separate ways, which together put a 19-point gap at the
+   * exact point where the line meets the needle:
+   *
+   *  1. It used the unemployment LEVEL on [3.5, 7.5] while the live model uses
+   *     the Sahm-style DRIFT on [0, 1.0]. Different constructs entirely.
+   *  2. Its weights were hand-written and drifted from the live model's, leaving
+   *     labour under-weighted by 5pp relative to intent.
+   *  3. A `w >= 0.5` guard was supposed to suppress months with too little
+   *     coverage, but the four Redfin specs alone clear 0.85, so it never bound:
+   *     2012-2016 published with NO labour input at all, understating the whole
+   *     recovery by ~8 points — precisely the stretch a reader uses to judge
+   *     whether the score leads.
+   *
+   * It now derives its specs FROM `INDICATORS`, so thresholds and relative
+   * weights can never drift again, and it requires labour coverage before
+   * publishing a point.
+   */
+  const clean = (s) => dropNulls(sortByDate(s || []));
 
-  if (specs.length === 0) return [];
+  // Only indicators available as a full monthly history are usable here.
+  const byKey = Object.fromEntries(INDICATORS.map((i) => [i.key, i]));
+  const specs = [
+    { key: 'monthsOfSupply', series: clean(data.redfin?.monthsOfSupply) },
+    { key: 'priceDrops', series: clean(data.redfin?.priceDrops) },
+    { key: 'inventoryYoY', series: clean(data.redfin?.inventoryYoY) },
+    { key: 'saleToList', series: clean(data.redfin?.saleToListRatio) },
+    { key: 'unemploymentDrift', series: null, labour: true },
+  ].filter((sp) => sp.labour || sp.series?.length);
+
+  const unemployment = clean(data.bls?.unemploymentRate);
+  if (!unemployment.length) return [];
+
+  // Rolling Sahm drift, the same construct the live model uses.
+  const ma3 = unemployment
+    .map((p, i) => (i >= 2 ? { date: p.date, value: (unemployment[i].value + unemployment[i - 1].value + unemployment[i - 2].value) / 3 } : null))
+    .filter(Boolean);
+  const driftAt = (date) => {
+    const idx = ma3.findIndex((p) => p.date === date);
+    if (idx < 12) return null;
+    const prior = ma3.slice(Math.max(0, idx - 12), idx);
+    return prior.length ? ma3[idx].value - Math.min(...prior.map((p) => p.value)) : null;
+  };
+
+  const lookup = specs
+    .filter((sp) => !sp.labour)
+    .map((sp) => ({ ...sp, ind: byKey[sp.key], map: new Map(sp.series.map((p) => [p.date, p.value])) }));
+  const labourInd = byKey.unemploymentDrift;
 
   const dates = new Set();
-  specs.forEach((s) => s.series.forEach((p) => Number.isFinite(p.value) && dates.add(p.date)));
-
-  const lookup = specs.map((s) => ({ ...s, map: new Map(s.series.map((p) => [p.date, p.value])) }));
+  lookup.forEach((sp) => sp.series.forEach((p) => dates.add(p.date)));
+  ma3.forEach((p) => dates.add(p.date));
 
   return [...dates]
     .sort()
     .map((date) => {
-      let w = 0;
+      let weight = 0;
       let acc = 0;
-      for (const s of lookup) {
-        const v = s.map.get(date);
-        if (!Number.isFinite(v)) continue;
-        const sub = scaleToRisk(v, s.low, s.high);
+
+      for (const sp of lookup) {
+        const v = sp.map.get(date);
+        if (!Number.isFinite(v) || !sp.ind) continue;
+        const sub = scaleToRisk(v, sp.ind.low, sp.ind.high);
         if (sub === null) continue;
-        acc += sub * s.weight;
-        w += s.weight;
+        acc += sub * sp.ind.weight;
+        weight += sp.ind.weight;
       }
-      // Require at least half the weight present before publishing a point,
-      // otherwise the early months read as artificially calm.
-      return w >= 0.5 ? { date, value: acc / w } : { date, value: null };
+
+      // Labour is required, not optional: publishing a point without it is what
+      // silently flattened 2012-2016.
+      const drift = driftAt(date);
+      if (!Number.isFinite(drift)) return { date, value: null };
+      const labourSub = scaleToRisk(drift, labourInd.low, labourInd.high);
+      if (labourSub === null) return { date, value: null };
+      acc += labourSub * labourInd.weight;
+      weight += labourInd.weight;
+
+      // Require most of the available weight before publishing a point.
+      const maxWeight = lookup.reduce((t, sp) => t + (sp.ind?.weight || 0), 0) + labourInd.weight;
+      return weight >= maxWeight * 0.8 ? { date, value: acc / weight } : { date, value: null };
     })
     .filter((p) => p.value !== null);
 }

@@ -485,6 +485,47 @@ check('releases tab flags an overdue series', (await snapPage.locator('.badge.er
 check('releases tab marks a current series', (await snapPage.locator('.badge.ok', { hasText: 'current' }).count()) > 0);
 check('releases tab states why BLS dates are derived', /BLS refuses automated clients/.test(relText));
 
+// --- regressions for the audit round ---------------------------------------
+// Snapshot data was badged green "live", indistinguishable from a direct fetch.
+await snapPage.getByRole('tab', { name: 'Inventory & demand' }).click();
+await snapPage.waitForTimeout(500);
+const badgeText = (await snapPage.locator('.badge').allInnerTexts()).join(' ');
+check('snapshot data is badged as a snapshot, not "live"',
+  /snapshot/i.test(badgeText) && !/\blive\b/i.test(badgeText), badgeText.slice(0, 80));
+
+// The state selector only scopes data in live mode; labelling national numbers
+// with a state name was user-visible misinformation.
+const stateSel = snapPage.locator('#state');
+check('state selector is disabled when it cannot scope the data',
+  await stateSel.isDisabled());
+
+// Tabs are role="tab" and must therefore behave like tabs.
+await snapPage.locator('[role="tab"]').first().focus();
+await snapPage.keyboard.press('ArrowRight');
+await snapPage.waitForTimeout(300);
+check('arrow keys move tab selection',
+  (await snapPage.locator('[role="tab"][aria-selected="true"]').innerText()) !== 'Overview');
+check('exactly one tab is in the tab order (roving tabindex)',
+  (await snapPage.evaluate(() => [...document.querySelectorAll('[role="tab"]')].filter((t) => t.tabIndex === 0).length)) === 1);
+// Sweep every tab: a table with no accessible name is announced as
+// "table, N columns" and is indistinguishable from the five beside it.
+{
+  let tablesSeen = 0;
+  const unnamed = [];
+  for (const t of ['Overview', 'Compare sources', 'Releases', 'Data sources', 'Settings']) {
+    await snapPage.getByRole('tab', { name: t }).click();
+    await snapPage.waitForTimeout(400);
+    const found = await snapPage.evaluate(() => {
+      const all = [...document.querySelectorAll('table')];
+      return { total: all.length, bad: all.filter((x) => !x.getAttribute('aria-label')).length };
+    });
+    tablesSeen += found.total;
+    if (found.bad) unnamed.push(`${t}:${found.bad}`);
+  }
+  check('every table has an accessible name', tablesSeen > 0 && unnamed.length === 0,
+    `${tablesSeen} tables, unnamed: ${unnamed.join(',') || 'none'}`);
+}
+
 // Regression: snapshot meta is one flat object per source, but the UI indexes it
 // per series/dataset. Without fanning it out, every provenance badge outside the
 // Redfin panels silently vanished in the default mode.
@@ -501,6 +542,33 @@ check('snapshot mode does not claim Census codes failed to resolve',
   (await snapPage.locator('.badge.err', { hasText: 'no match' }).count()) === 0);
 const srcText = await snapPage.locator('.app').innerText();
 check('data sources tab lists Realtor.com and Zillow', /Realtor\.com/.test(srcText) && /Zillow Research/.test(srcText));
+// Opening every table view on a phone used to push 159px of horizontal scroll
+// onto the page, because a `1fr` grid track sizes to the table's min-content.
+const phone = await browser.newPage({ viewport: { width: 390, height: 844 } });
+await phone.route('**/data/*.json', (route) => {
+  const name = /data\/(\w+)\.json/.exec(route.request().url())?.[1];
+  const body = SNAP[name];
+  if (!body) return route.fulfill({ status: 404, body: 'nope' });
+  route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+});
+await phone.addInitScript(() => { localStorage.clear(); });
+await phone.goto(base, { waitUntil: 'networkidle' });
+await phone.waitForTimeout(1500);
+await phone.getByRole('tab', { name: 'Inventory & demand' }).click();
+await phone.waitForTimeout(700);
+for (const btn of await phone.getByRole('button', { name: 'Table view' }).all()) {
+  await btn.click();
+  await phone.waitForTimeout(80);
+}
+await phone.waitForTimeout(500);
+const overflow = await phone.evaluate(() => ({
+  s: document.documentElement.scrollWidth,
+  c: document.documentElement.clientWidth,
+}));
+check('no horizontal overflow at 390px with every table open',
+  overflow.s <= overflow.c + 1, `scrollWidth ${overflow.s} vs client ${overflow.c}`);
+await phone.close();
+
 await snapPage.getByRole('tab', { name: 'Overview' }).click();
 await snapPage.waitForTimeout(600);
 await snapPage.screenshot({ path: 'smoke-snapshot.png', fullPage: false });

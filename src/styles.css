@@ -18,7 +18,10 @@
   --page: #f9f9f7;               /* page plane */
   --text-primary: #0b0b0b;
   --text-secondary: #52514e;
-  --text-muted: #898781;
+  /* #898781 measured 3.50:1 on the card surface and 3.41:1 on the page —
+     below the 4.5:1 AA floor, and it carries every field label, card note and
+     axis caption. #6f6c67 measures 5.05:1 / 4.93:1. */
+  --text-muted: #6f6c67;
   --grid: #e1e0d9;
   --axis: #c3c2b7;
   --border: rgba(11, 11, 11, 0.10);
@@ -36,6 +39,10 @@
   --serious: #ec835a;
   --critical: #d03b3b;
   --good-text: #006300;
+  /* The primary button reuses the series-1 hue, which is tuned for thin chart
+     lines rather than white text on a filled block: #2a78d6 gives 4.42:1, just
+     under AA. This step is 4.93:1 and visually indistinguishable at button size. */
+  --accent-solid: #2670cb;
 
   --radius: 10px;
   --shadow: 0 1px 2px rgba(11, 11, 11, 0.04), 0 1px 8px rgba(11, 11, 11, 0.04);
@@ -60,6 +67,10 @@
     --series-4: #c98500;
     --series-5: #d55181;
     --good-text: #0ca30c;
+    --accent-solid: #2a72c9;
+    /* #d03b3b reads 3.62:1 on the dark surface — fine as a mark, too low for
+       the 11px bold demo stamp and the error badge. */
+    --critical: #e35b5b;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 8px rgba(0, 0, 0, 0.3);
   }
 }
@@ -80,6 +91,8 @@
   --series-4: #c98500;
   --series-5: #d55181;
   --good-text: #0ca30c;
+  --accent-solid: #2a72c9;
+  --critical: #e35b5b;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 8px rgba(0, 0, 0, 0.3);
 }
 
@@ -127,7 +140,7 @@ button {
 }
 button:hover:not(:disabled) { border-color: var(--text-muted); }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
-button.primary { background: var(--series-1); border-color: var(--series-1); color: #fff; }
+button.primary { background: var(--accent-solid); border-color: var(--accent-solid); color: #fff; }
 button.primary:hover:not(:disabled) { filter: brightness(1.08); }
 button.ghost { background: transparent; }
 button.tiny { font-size: 0.75rem; padding: 4px 9px; }
@@ -141,8 +154,13 @@ button.tiny { font-size: 0.75rem; padding: 4px 9px; }
 .tabs button[aria-selected="true"] { color: var(--text-primary); border-bottom-color: var(--series-1); font-weight: 600; }
 
 /* ---------------------------------------------------------------- cards --- */
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px; }
-@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+/* minmax(0, 1fr) is load-bearing: a plain `1fr` track sizes to the table's
+   min-content, so opening the table view on a phone grew the cards past the
+   viewport and pushed 159px of horizontal scroll onto the page instead of
+   scrolling inside .table-wrap. */
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); gap: 16px; }
+@media (max-width: 900px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.card, .card > div { min-width: 0; }
 
 .card {
   background: var(--surface-1); border: 1px solid var(--border);
@@ -174,7 +192,10 @@ button.tiny { font-size: 0.75rem; padding: 4px 9px; }
 .gauge-blurb { color: var(--text-secondary); font-size: 0.875rem; margin: 12px 0 0; }
 
 .coverage { display: flex; align-items: center; gap: 9px; font-size: 0.8125rem; color: var(--text-secondary); margin-top: 14px; }
-.coverage-track { flex: 1; display: block; height: 5px; background: var(--grid); border-radius: 3px; overflow: hidden; min-width: 90px; }
+/* The fill's END is the datum, and status fills measure 1.4-2.5:1 against the
+   track — below the 3:1 graphics floor, so you cannot see where it stops. A
+   hairline ring makes the boundary legible without changing the palette. */
+.coverage-track { flex: 1; display: block; height: 5px; background: var(--grid); border-radius: 3px; overflow: hidden; min-width: 90px; box-shadow: inset 0 0 0 1px var(--text-muted); }
 /* display:block is load-bearing: these fills are <span>s, and height has no
    effect on an inline box. */
 .coverage-fill { display: block; height: 100%; background: var(--series-1); border-radius: 3px; }
@@ -190,7 +211,7 @@ tbody tr:hover { background: color-mix(in srgb, var(--series-1) 5%, transparent)
 
 /* Sub-score meter inside the breakdown table. */
 .meter { display: flex; align-items: center; gap: 8px; min-width: 130px; }
-.meter-track { flex: 1; display: block; height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; }
+.meter-track { flex: 1; display: block; height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; box-shadow: inset 0 0 0 1px var(--text-muted); }
 .meter-fill { display: block; height: 100%; border-radius: 3px; }
 .meter-num { font-family: var(--mono); font-size: 0.75rem; font-variant-numeric: tabular-nums; color: var(--text-secondary); min-width: 26px; text-align: right; }
 

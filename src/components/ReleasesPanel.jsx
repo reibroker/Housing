@@ -12,6 +12,71 @@
  */
 
 import { formatValue } from './TimeSeriesChart.jsx';
+import { INDICATORS } from '../model/riskModel.js';
+
+/**
+ * Readable names for the internal series keys. The model already names most of
+ * these; the rest are chart-only series with no indicator behind them.
+ */
+const SERIES_LABELS = {
+  ...Object.fromEntries(INDICATORS.map((i) => [i.key, i.label])),
+  medianSalePrice: 'Median sale price',
+  medianSalePriceYoY: 'Median sale price, year-over-year',
+  homesSold: 'Homes sold',
+  homesSoldYoY: 'Homes sold, year-over-year',
+  newListings: 'New listings',
+  inventory: 'Active inventory',
+  inventoryYoY: 'Active inventory, year-over-year',
+  monthsOfSupply: 'Months of supply',
+  medianDaysOnMarket: 'Median days on market',
+  saleToListRatio: 'Sale-to-list price ratio',
+  soldAboveList: 'Sold above list price',
+  priceDrops: 'Listings with a price drop',
+  permitsTotal: 'Building permits, total',
+  permitsSingle: 'Building permits, single-family',
+  startsTotal: 'Housing starts, total',
+  startsSingle: 'Housing starts, single-family',
+  underConstruction: 'Units under construction',
+  completions: 'Housing completions',
+  newHomeSales: 'New homes sold',
+  newHomeMonthsSupply: "New-home months' supply",
+  newHomesForSale: 'New homes for sale',
+  homeownerVacancy: 'Homeowner vacancy rate',
+  rentalVacancy: 'Rental vacancy rate',
+  residentialConstructionJobs: 'Residential construction employment',
+  residentialTradeJobs: 'Residential trade employment',
+  constructionJobs: 'Construction employment',
+  totalNonfarm: 'Total nonfarm employment',
+  unemploymentRate: 'Unemployment rate',
+  stateUnemploymentRate: 'Unemployment rate, selected state',
+  cpiShelter: 'CPI shelter',
+  mortgage30yr: '30-year fixed mortgage rate',
+  consumerSentiment: 'Consumer sentiment',
+  revolvingCredit: 'Revolving consumer credit',
+  creditCardDelinquency: 'Credit card delinquency rate',
+  caseShiller: 'Case-Shiller home price index',
+  existingHomeSales: 'Existing home sales',
+  activeListings: 'Active listings',
+  priceReducedShare: 'Listings with a price reduction',
+  medianListPrice: 'Median list price',
+  existingMonthsSupply: "Existing-home months' supply",
+  derivedMonthsOfSupply: "Months' supply, derived",
+  homeValueIndex: 'Zillow home value index',
+  homeValueForecast: 'Zillow home value forecast',
+  daysToPending: 'Days to pending',
+  priceCutShare: 'Listings with a price cut',
+};
+
+const labelFor = (key) =>
+  SERIES_LABELS[key] || key.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (c) => c.toUpperCase());
+
+/** Rates and ratios want decimals; counts and prices do not. */
+function decimalsFor(key, value) {
+  if (!Number.isFinite(value)) return 0;
+  if (Math.abs(value) >= 10_000) return 0;
+  if (/rate|share|ratio|yoy|vacancy|supply|percent|sentiment/i.test(key)) return 2;
+  return Math.abs(value) < 100 ? 1 : 0;
+}
 
 const dayFmt = (iso) =>
   new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
@@ -73,7 +138,7 @@ export default function ReleasesPanel({ calendar, loading, error }) {
           feed that has stopped updating — which a chart alone would never show you.
           <ul className="tiny-text" style={{ margin: '8px 0 0', paddingLeft: 18 }}>
             {overdue.map(([k, f]) => (
-              <li key={k}>{k} — latest {f.latest}, {f.ageDays} days old</li>
+              <li key={k}>{labelFor(k)} &mdash; latest {dayFmt(f.latest)}, {f.ageDays} days old</li>
             ))}
           </ul>
         </div>
@@ -88,9 +153,9 @@ export default function ReleasesPanel({ calendar, loading, error }) {
           <p className="small muted">No upcoming tracked releases found in the calendar.</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table aria-label="Upcoming releases that move this dashboard">
               <thead>
-                <tr><th>Release</th><th>Date</th><th className="num">When</th><th>Reference period</th><th>Moves</th></tr>
+                <tr><th scope="col">Release</th><th scope="col">Date</th><th scope="col" className="num">When</th><th scope="col">Reference period</th><th scope="col">Moves</th></tr>
               </thead>
               <tbody>
                 {tracked.map((e) => (
@@ -119,11 +184,11 @@ export default function ReleasesPanel({ calendar, loading, error }) {
           not a publication date: a figure stamped 1 May is published in mid-June and is perfectly current at 60 days old.
         </p>
         <div className="table-wrap">
-          <table>
+          <table aria-label="Data freshness by series">
             <thead>
               <tr>
-                <th>Series</th><th>Source</th><th>Latest</th><th className="num">Value</th>
-                <th className="num">Age</th><th className="num">Flag at</th><th>Cadence</th><th>Status</th><th>Schedule</th>
+                <th scope="col">Series</th><th scope="col">Source</th><th scope="col">Latest</th><th scope="col" className="num">Value</th>
+                <th scope="col" className="num">Age</th><th scope="col" className="num">Flag at</th><th scope="col">Cadence</th><th scope="col">Status</th><th scope="col">Schedule</th>
               </tr>
             </thead>
             <tbody>
@@ -131,15 +196,17 @@ export default function ReleasesPanel({ calendar, loading, error }) {
                 .sort((a, b) => (b[1].ageDays ?? 0) - (a[1].ageDays ?? 0))
                 .map(([name, f]) => (
                   <tr key={name}>
-                    <td>{name}</td>
+                    <td>{labelFor(name)}</td>
                     <td className="small muted">{f.group}</td>
-                    <td className="small">{f.latest || '—'}</td>
-                    <td className="num">{formatValue(f.latestValue, { decimals: 2 })}</td>
+                    <td className="small">{f.latest ? dayFmt(f.latest) : '—'}</td>
+                    <td className="num">{formatValue(f.latestValue, { decimals: decimalsFor(name, f.latestValue) })}</td>
                     <td className="num">{f.ok ? `${f.ageDays}d` : '—'}</td>
                     <td className="num muted">{f.ok ? `${f.expectedMaxAgeDays}d` : '—'}</td>
                     <td className="small muted">{f.ok ? `${f.cadence}${f.intervalDays ? ` · ~${f.intervalDays}d` : ''}` : '—'}</td>
                     <td><Freshness f={f} /></td>
-                    <td className="tiny-text muted">{f.rule || `${f.cadence}, estimated`}</td>
+                    {/* A series with neither a rule nor a detected cadence
+                        rendered the literal string "undefined, estimated". */}
+                    <td className="tiny-text muted">{f.rule || (f.cadence && f.cadence !== 'unknown' ? `${f.cadence}, estimated` : '—')}</td>
                   </tr>
                 ))}
             </tbody>
@@ -154,8 +221,8 @@ export default function ReleasesPanel({ calendar, loading, error }) {
         <section className="card full">
           <div className="card-head"><h3>Recently published</h3></div>
           <div className="table-wrap" style={{ maxHeight: 320, overflowY: 'auto' }}>
-            <table>
-              <thead><tr><th>Release</th><th>Date</th><th>Reference period</th><th>Tracked</th></tr></thead>
+            <table aria-label="Recently published releases">
+              <thead><tr><th scope="col">Release</th><th scope="col">Date</th><th scope="col">Reference period</th><th scope="col">Tracked</th></tr></thead>
               <tbody>
                 {recent.map((e) => (
                   <tr key={e.title + e.releaseAt}>
@@ -175,8 +242,8 @@ export default function ReleasesPanel({ calendar, loading, error }) {
         <details>
           <summary>All other scheduled Census economic releases ({others.length})</summary>
           <div className="table-wrap" style={{ maxHeight: 300, overflowY: 'auto', marginTop: 10 }}>
-            <table>
-              <thead><tr><th>Release</th><th>Date</th><th className="num">When</th></tr></thead>
+            <table aria-label="All other scheduled Census releases">
+              <thead><tr><th scope="col">Release</th><th scope="col">Date</th><th scope="col" className="num">When</th></tr></thead>
               <tbody>
                 {others.map((e) => (
                   <tr key={e.title + e.releaseAt}>

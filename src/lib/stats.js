@@ -36,8 +36,42 @@ export function latest(series) {
  */
 export function lagged(series, periods) {
   const clean = dropNulls(sortByDate(series));
-  const i = clean.length - 1 - periods;
-  return i >= 0 ? clean[i] : null;
+  if (!clean.length) return null;
+
+  // Positional lookup silently becomes a longer span whenever the series has an
+  // interior gap: dropNulls removes the hole, so "12 observations back" can mean
+  // 13+ calendar months. Anchor on the date instead, and accept the nearest
+  // observation within half a period of the target.
+  const last = clean[clean.length - 1];
+  const spacing = medianSpacingDays(clean);
+  if (!spacing) {
+    const i = clean.length - 1 - periods;
+    return i >= 0 ? clean[i] : null;
+  }
+  const targetMs = new Date(`${last.date}T00:00:00Z`).getTime() - periods * spacing * 86_400_000;
+  const tolerance = (spacing / 2) * 86_400_000;
+
+  let best = null;
+  let bestGap = Infinity;
+  for (const p of clean) {
+    const gap = Math.abs(new Date(`${p.date}T00:00:00Z`).getTime() - targetMs);
+    if (gap < bestGap) { bestGap = gap; best = p; }
+  }
+  return best && bestGap <= tolerance ? best : null;
+}
+
+/** Median gap between consecutive observations, in days. Null if undeterminable. */
+export function medianSpacingDays(series) {
+  const clean = dropNulls(sortByDate(series)).slice(-24);
+  if (clean.length < 3) return null;
+  const gaps = [];
+  for (let i = 1; i < clean.length; i++) {
+    gaps.push(
+      (new Date(`${clean[i].date}T00:00:00Z`) - new Date(`${clean[i - 1].date}T00:00:00Z`)) / 86_400_000
+    );
+  }
+  gaps.sort((a, b) => a - b);
+  return gaps[Math.floor(gaps.length / 2)] || null;
 }
 
 /** Percent change from `periods` ago to latest. Null if either end is missing. */
@@ -76,15 +110,6 @@ export function stdev(values) {
   return Math.sqrt(v.reduce((s, x) => s + (x - m) ** 2, 0) / (v.length - 1));
 }
 
-/** Where the latest value sits within the series' own history, as 0-100. */
-export function percentileRank(series) {
-  const clean = dropNulls(sortByDate(series));
-  if (clean.length < 4) return null;
-  const last = clean[clean.length - 1].value;
-  const below = clean.filter((p) => p.value < last).length;
-  return (below / (clean.length - 1)) * 100;
-}
-
 /**
  * Add a `yoy` field (percent change vs 12 observations prior) to each point.
  * Used by the charts so a level series and its growth rate can share an axis.
@@ -98,15 +123,6 @@ export function withYoY(series, periods = 12) {
         ? ((p.value - prior.value) / Math.abs(prior.value)) * 100
         : null;
     return { ...p, yoy };
-  });
-}
-
-/** Centered-forward simple moving average, used to smooth noisy weekly data. */
-export function movingAverage(series, window) {
-  const clean = sortByDate(series);
-  return clean.map((p, i) => {
-    const slice = clean.slice(Math.max(0, i - window + 1), i + 1).filter((x) => Number.isFinite(x.value));
-    return { ...p, value: slice.length ? slice.reduce((s, x) => s + x.value, 0) / slice.length : null };
   });
 }
 
