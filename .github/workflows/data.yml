@@ -12,9 +12,13 @@ name: Refresh data and deploy
 # and the repository stays the size of its source. Git keeps code; Pages keeps
 # data. The diagnostic report is published alongside the site for the same reason.
 #
-# Why this workflow deploys rather than letting pages.yml do it: GitHub does not
-# trigger workflows from actions taken with the built-in GITHUB_TOKEN, so nothing
-# this job did could ever have started another workflow.
+# This is the ONLY workflow that deploys. There used to be a separate pages.yml
+# for code pushes, but it built without fetching -- so any code push would have
+# published a build containing no data at all and wiped the live snapshot, since
+# public/data is no longer in git. One deploy path removes that whole class of
+# mistake. (It also had to be this way round: GitHub does not trigger workflows
+# from actions taken with the built-in GITHUB_TOKEN, so this job could never have
+# started another workflow anyway.)
 
 on:
   schedule:
@@ -22,11 +26,10 @@ on:
     # within the hour, allowing for scheduler drift and the build.
     - cron: '25 * * * *'
   workflow_dispatch:
+  # EVERY push to main, not just changes to the fetcher. This is the single
+  # deploy path for the site, so a code change must go through it too.
   push:
     branches: [main]
-    paths:
-      - 'scripts/fetch-data.mjs'
-      - '.github/workflows/data.yml'
 
 permissions:
   contents: read
@@ -69,6 +72,14 @@ jobs:
         run: |
           # Compare against what is already live. The data moves monthly, so most
           # hourly runs have nothing new to publish and should stop here.
+          #
+          # A push always rebuilds regardless: the code itself changed, and the
+          # data hash says nothing about that.
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Not a scheduled run — building regardless."
+            exit 0
+          fi
           LIVE=$(curl -fsSL "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/manifest.json" 2>/dev/null \
                  | python3 -c "import sys,json;print(json.load(sys.stdin).get('contentHash',''))" 2>/dev/null || echo "")
           NEW="${{ steps.fetch.outputs.content_hash }}"
