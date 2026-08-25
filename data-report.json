@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-25T14:09:41.470Z",
+  "generatedAt": "2026-08-25T14:51:54.443Z",
   "node": "v20.20.2",
   "sources": {
     "census": {
@@ -10,6 +10,22 @@
       "unmatched": [],
       "allCodes": {},
       "error": "CENSUS_API_KEY not set — Census rejects every unkeyed request."
+    },
+    "bls": {
+      "ok": true,
+      "cors": "*",
+      "keyed": false,
+      "status": "REQUEST_SUCCEEDED",
+      "message": [],
+      "counts": {
+        "residentialConstructionJobs": 115,
+        "residentialTradeJobs": 115,
+        "constructionJobs": 115,
+        "totalNonfarm": 115,
+        "unemploymentRate": 115,
+        "cpiShelter": 115,
+        "stateUnemploymentRate": 0
+      }
     },
     "redfin": {
       "ok": true,
@@ -114,22 +130,6 @@
         }
       }
     },
-    "bls": {
-      "ok": true,
-      "cors": "*",
-      "keyed": false,
-      "status": "REQUEST_SUCCEEDED",
-      "message": [],
-      "counts": {
-        "residentialConstructionJobs": 115,
-        "residentialTradeJobs": 115,
-        "constructionJobs": 115,
-        "totalNonfarm": 115,
-        "unemploymentRate": 115,
-        "cpiShelter": 115,
-        "stateUnemploymentRate": 0
-      }
-    },
     "calendar": {
       "userAgent": "HousingMarketDashboard/1.0 (+https://github.com/reibroker/Housing; public data, hourly)",
       "robots": {
@@ -189,6 +189,84 @@
         }
       },
       "parsed": 169,
+      "ok": true
+    },
+    "resale": {
+      "resolved": {
+        "activeListings": {
+          "id": "ACTLISCOUUS",
+          "n": 121,
+          "last": {
+            "date": "2026-07-01",
+            "value": 1126252
+          }
+        },
+        "newListings": {
+          "id": "NEWLISCOUUS",
+          "n": 121,
+          "last": {
+            "date": "2026-07-01",
+            "value": 423732
+          }
+        },
+        "medianDaysOnMarket": {
+          "id": "MEDDAYONMARUS",
+          "n": 121,
+          "last": {
+            "date": "2026-07-01",
+            "value": 57
+          }
+        },
+        "priceReducedCount": {
+          "id": "PRIREDCOUUS",
+          "n": 121,
+          "last": {
+            "date": "2026-07-01",
+            "value": 404344
+          }
+        },
+        "medianListPrice": {
+          "id": "MEDLISPRIUS",
+          "n": 121,
+          "last": {
+            "date": "2026-07-01",
+            "value": 428950
+          }
+        },
+        "existingMonthsSupply": {
+          "id": "HOSSUPUSM673N",
+          "n": 13,
+          "last": {
+            "date": "2026-07-01",
+            "value": 4.6
+          }
+        },
+        "existingHomeSales": {
+          "id": "EXHOSLUSM495S",
+          "n": 13,
+          "last": {
+            "date": "2026-07-01",
+            "value": 4060000
+          }
+        },
+        "priceReducedShare": {
+          "id": "PRIREDCOUUS / ACTLISCOUUS",
+          "n": 121,
+          "last": {
+            "date": "2026-07-01",
+            "value": 35.90173424775273
+          }
+        },
+        "derivedMonthsOfSupply": {
+          "id": "ACTLISCOUUS / (EXHOSLUSM495S / 12)",
+          "n": 13,
+          "last": {
+            "date": "2026-07-01",
+            "value": 3.328823645320197
+          }
+        }
+      },
+      "failed": {},
       "ok": true
     },
     "fred": {
@@ -268,84 +346,6 @@
           }
         }
       }
-    },
-    "resale": {
-      "resolved": {
-        "activeListings": {
-          "id": "ACTLISCOUUS",
-          "n": 121,
-          "last": {
-            "date": "2026-07-01",
-            "value": 1126252
-          }
-        },
-        "newListings": {
-          "id": "NEWLISCOUUS",
-          "n": 121,
-          "last": {
-            "date": "2026-07-01",
-            "value": 423732
-          }
-        },
-        "medianDaysOnMarket": {
-          "id": "MEDDAYONMARUS",
-          "n": 121,
-          "last": {
-            "date": "2026-07-01",
-            "value": 57
-          }
-        },
-        "priceReducedCount": {
-          "id": "PRIREDCOUUS",
-          "n": 121,
-          "last": {
-            "date": "2026-07-01",
-            "value": 404344
-          }
-        },
-        "medianListPrice": {
-          "id": "MEDLISPRIUS",
-          "n": 121,
-          "last": {
-            "date": "2026-07-01",
-            "value": 428950
-          }
-        },
-        "existingMonthsSupply": {
-          "id": "HOSSUPUSM673N",
-          "n": 13,
-          "last": {
-            "date": "2026-07-01",
-            "value": 4.6
-          }
-        },
-        "existingHomeSales": {
-          "id": "EXHOSLUSM495S",
-          "n": 13,
-          "last": {
-            "date": "2026-07-01",
-            "value": 4060000
-          }
-        },
-        "priceReducedShare": {
-          "id": "PRIREDCOUUS / ACTLISCOUUS",
-          "n": 121,
-          "last": {
-            "date": "2026-07-01",
-            "value": 35.90173424775273
-          }
-        },
-        "derivedMonthsOfSupply": {
-          "id": "ACTLISCOUUS / (EXHOSLUSM495S / 12)",
-          "n": 13,
-          "last": {
-            "date": "2026-07-01",
-            "value": 3.328823645320197
-          }
-        }
-      },
-      "failed": {},
-      "ok": true
     },
     "zillow": {
       "attribution": "Zillow Group, Zillow Research public data",
