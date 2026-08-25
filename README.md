@@ -30,7 +30,10 @@ cp .env.example .env
 #    Put it in .env as VITE_CENSUS_API_KEY=...
 #    (Or skip .env entirely and paste the key into the app's Settings tab.)
 
-# 3. Run
+# 3. Fetch a data snapshot (optional but recommended)
+npm run data         # writes public/data/*.json — see "Where the data lives" below
+
+# 4. Run
 npm run dev          # http://localhost:5173
 
 # Other commands
@@ -317,6 +320,23 @@ npm run build:single
 Emits `housing-dashboard-demo.html` — the entire app, CSS and JS inlined, in one file that opens
 straight from disk with no server and no network. Forced into demo mode, since a file:// page can
 fetch nothing. Handy for sending someone a look at the UI without asking them to install anything.
+
+### Where the data lives (and why it is not in git)
+
+`public/data/*.json` is **build output, not source**, and is gitignored. CI fetches every
+source server-side on each run and publishes the JSON with the site; Pages serves the newest
+build and discards the previous one.
+
+This matters for storage. Committing the snapshot hourly added ~390 KB per run — roughly
+**1.2 GB of git history a year** to record numbers that change monthly. Git holds the code;
+Pages holds the data. A fresh clone therefore has no snapshot: run `npm run data`, or use
+Demo mode.
+
+The workflow also compares a content hash against what is already deployed and skips the
+rebuild when nothing changed, so most hourly runs stop after the fetch.
+
+The diagnostic report is published at `/data/report.json` on the live site rather than
+committed, for the same reason.
 
 ### CI
 

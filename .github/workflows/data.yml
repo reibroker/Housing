@@ -1,26 +1,25 @@
-name: Refresh data snapshot
+name: Refresh data and deploy
 
-# Fetches every source SERVER-SIDE and commits the result into public/data/.
+# Fetches every source SERVER-SIDE and publishes the result straight to Pages.
 #
-# This is the answer to the CORS problem. BLS, FRED and Redfin do not send
-# Access-Control-Allow-Origin, so a browser on a static host cannot read them no
-# matter how the request is formed. A GitHub runner has no CORS policy, so it
-# fetches freely; the app then loads the committed JSON from its own origin,
-# which needs no preflight, no proxy and no API key in the browser.
+# NOTHING IS COMMITTED. An earlier version committed the snapshot on every run,
+# which worked but grew the repository by roughly 390 KB an hour -- about 1.2 GB
+# a year of git history holding numbers that change monthly. On a 500 MB account
+# budget that is the whole allowance in five months, spent on stale copies.
 #
-# The app keeps its direct-fetch adapters for anyone who supplies their own key
-# and wants live numbers. The snapshot is the default because it always works.
+# The data belongs in the deployed artifact, not in version control: Pages serves
+# the newest build and replaces the previous one, so the site is always current
+# and the repository stays the size of its source. Git keeps code; Pages keeps
+# data. The diagnostic report is published alongside the site for the same reason.
 #
-# Cadence: these series publish monthly at best (weekly for mortgage rates), so
-# a daily run is already far more often than the data changes.
+# Why this workflow deploys rather than letting pages.yml do it: GitHub does not
+# trigger workflows from actions taken with the built-in GITHUB_TOKEN, so nothing
+# this job did could ever have started another workflow.
 
 on:
   schedule:
-    # Hourly. US statistical releases land at 08:30 ET, and the commit step is a
-    # no-op when nothing changed, so most runs cost a fetch and stop there. This
-    # is as close to "immediately" as a scheduled static-site pipeline gets:
-    # publication -> visible on the site inside about an hour, allowing for
-    # GitHub's scheduler drift plus the Pages rebuild.
+    # Hourly. US statistical releases land at 08:30 ET; a new figure is live
+    # within the hour, allowing for scheduler drift and the build.
     - cron: '25 * * * *'
   workflow_dispatch:
   push:
@@ -30,91 +29,22 @@ on:
       - '.github/workflows/data.yml'
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
-# Shares the Pages group with pages.yml so two deploys can never race.
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
-  refresh:
-    runs-on: ubuntu-latest
-    outputs:
-      changed: ${{ steps.commit.outputs.changed }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Fetch all sources
-        env:
-          # Census rejects unkeyed requests. Add a repository secret named
-          # CENSUS_API_KEY (free: api.census.gov/data/key_signup.html).
-          # Kept server-side — it never reaches the browser or the bundle.
-          CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
-          # Optional: raises BLS from 25 to 500 requests/day.
-          BLS_API_KEY: ${{ secrets.BLS_API_KEY }}
-          HISTORY_YEARS: '12'
-        run: node scripts/fetch-data.mjs
-
-      - name: Summarize
-        run: |
-          echo '### Data refresh' >> $GITHUB_STEP_SUMMARY
-          echo '```json' >> $GITHUB_STEP_SUMMARY
-          cat public/data/manifest.json >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-
-      # The snapshot lives in public/, so Vite bundles it at build time, which
-      # means the site must rebuild before new data reaches anyone. This commit
-      # deliberately does NOT carry [skip ci]: that marker skips every workflow
-      # on the commit, including the Pages deploy, and the published site would
-      # go on serving the first snapshot forever. CI is kept off these commits
-      # by a paths-ignore filter in ci.yml instead.
-      - name: Commit the snapshot
-        id: commit
-        run: |
-          git config user.name  'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add public/data data-report.json
-          if git diff --staged --quiet; then
-            echo "No change in the data snapshot."
-            echo "changed=false" >> $GITHUB_OUTPUT
-          else
-            git commit -m "chore(data): refresh snapshot"
-            git push
-            echo "changed=true" >> $GITHUB_OUTPUT
-          fi
-
-  # ---------------------------------------------------------------------------
-  # Deploy the site from THIS run.
-  #
-  # GitHub deliberately does not trigger workflows from pushes made with the
-  # built-in GITHUB_TOKEN -- a loop-prevention rule. So the commit above never
-  # started pages.yml, and the published site went on serving the snapshot from
-  # whenever a human last pushed, while the repository refreshed hourly behind
-  # it. Data seventeen hours stale on a page that says it updates hourly is worse
-  # than no refresh at all, because nothing looks wrong.
-  #
-  # Rather than trying to trigger the other workflow (which the same rule blocks),
-  # this job builds and deploys directly. pages.yml still handles ordinary code
-  # pushes; the shared `pages` concurrency group keeps the two from racing.
-  # ---------------------------------------------------------------------------
-  deploy:
-    needs: refresh
-    if: needs.refresh.outputs.changed == 'true'
+  refresh-and-deploy:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: main   # the commit the refresh job just pushed
 
       - uses: actions/setup-node@v4
         with:
@@ -123,20 +53,59 @@ jobs:
 
       - run: npm ci
 
-      - name: Build for Pages
+      - name: Fetch all sources
+        id: fetch
+        env:
+          # Optional. Census gaps fall back to keyless FRED mirrors, so the
+          # dashboard is complete without this; a key promotes those panels to
+          # the primary source and activates their cross-checks.
+          CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
+          BLS_API_KEY: ${{ secrets.BLS_API_KEY }}
+          HISTORY_YEARS: '12'
+        run: node scripts/fetch-data.mjs
+
+      - name: Skip the rebuild if no figure actually changed
+        id: changed
+        run: |
+          # Compare against what is already live. The data moves monthly, so most
+          # hourly runs have nothing new to publish and should stop here.
+          LIVE=$(curl -fsSL "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/manifest.json" 2>/dev/null \
+                 | python3 -c "import sys,json;print(json.load(sys.stdin).get('contentHash',''))" 2>/dev/null || echo "")
+          NEW="${{ steps.fetch.outputs.content_hash }}"
+          echo "live=$LIVE new=$NEW"
+          if [ -n "$LIVE" ] && [ "$LIVE" = "$NEW" ]; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No change since the deployed snapshot — skipping deploy."
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Summarize
+        run: |
+          echo '### Data refresh' >> $GITHUB_STEP_SUMMARY
+          echo "Changed: ${{ steps.changed.outputs.changed }}" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          cat public/data/manifest.json >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Build
+        if: steps.changed.outputs.changed == 'true'
         env:
           VITE_BASE: /${{ github.event.repository.name }}/
           VITE_DEFAULT_DEMO: 'false'
         run: npm run build
 
       - name: Add SPA + no-Jekyll files
+        if: steps.changed.outputs.changed == 'true'
         run: |
           touch dist/.nojekyll
           cp dist/index.html dist/404.html
 
       - uses: actions/upload-pages-artifact@v3
+        if: steps.changed.outputs.changed == 'true'
         with:
           path: dist
 
       - id: deployment
+        if: steps.changed.outputs.changed == 'true'
         uses: actions/deploy-pages@v4

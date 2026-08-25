@@ -27,6 +27,7 @@
  */
 
 import { writeFileSync, mkdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseTsvStream, parseCsv, num } from '../src/lib/tsv.js';
@@ -1023,8 +1024,22 @@ write('zillow', { series: zillow, generatedAt: report.generatedAt, attribution: 
 const DATA_SOURCES = ['census', 'bls', 'fred', 'redfin', 'resale', 'zillow'];
 const filledCount = Object.keys(filledFrom).length;
 
+/**
+ * Hash of the DATA, deliberately excluding generatedAt.
+ *
+ * The timestamp changes on every run; the numbers change roughly monthly. Hashing
+ * the series alone lets the workflow tell "nothing new was published" from "a new
+ * figure landed", and skip a rebuild in the first case. Without this the site
+ * would redeploy twenty-four times a day to republish identical bytes.
+ */
+const contentHash = createHash('sha256')
+  .update(JSON.stringify([censusOut, bls, fred, redfin, resale, zillow, mirrors]))
+  .digest('hex')
+  .slice(0, 16);
+
 const manifest = {
   generatedAt: report.generatedAt,
+  contentHash,
   historyYears: HISTORY_YEARS,
   sources: Object.fromEntries(
     DATA_SOURCES.map((k) => {
@@ -1089,9 +1104,17 @@ if (overdue.length) {
   console.log('\nOVERDUE SERIES (older than the publication schedule implies):');
   for (const [k, f] of overdue) console.log(`  ${k}: latest ${f.latest}, ${f.ageDays}d old (expected <= ${f.expectedMaxAgeDays}d)`);
 }
-writeFileSync(join(ROOT, 'data-report.json'), JSON.stringify(report, null, 2), 'utf8');
+// The diagnostic report ships WITH THE SITE rather than being committed. It is
+// the only way to see what the upstream APIs actually returned from a machine
+// that can reach them, and publishing it costs nothing while committing it grew
+// the repository by roughly a gigabyte a year.
+writeFileSync(join(OUT, 'report.json'), JSON.stringify(report, null, 2), 'utf8');
 
-console.log(JSON.stringify(manifest, null, 2));
+console.log(JSON.stringify({ ...manifest, crossChecks: undefined, filledFromMirror: undefined }, null, 2));
+// Surfaced as a step output so the workflow can skip an identical redeploy.
+if (process.env.GITHUB_OUTPUT) {
+  writeFileSync(process.env.GITHUB_OUTPUT, `content_hash=${contentHash}\n`, { flag: 'a' });
+}
 const okCount = Object.values(manifest.sources).filter((s) => s.ok).length;
 console.log(`\n${okCount}/4 sources fetched successfully.`);
 // Never fail the job: a partial snapshot is more useful than none, and the

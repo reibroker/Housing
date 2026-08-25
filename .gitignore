@@ -7,3 +7,9 @@ dist
 smoke-*.png
 dist-single
 housing-dashboard-demo.html
+
+# Data snapshots are BUILD OUTPUT, not source. They are fetched fresh by CI and
+# published with the site. Committing them grew the repo ~390KB/hour (~1.2GB/yr)
+# to store numbers that change monthly.
+public/data/*.json
+data-report.json

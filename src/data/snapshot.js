@@ -37,7 +37,7 @@ async function getJson(name) {
   if (!res.ok) {
     const e = new Error(
       res.status === 404
-        ? `No data snapshot found at ${url}. The "Refresh data snapshot" workflow has not produced one yet — run it from the repository's Actions tab.`
+        ? `No data snapshot found at ${url}. Snapshots are build output, not source, so a fresh checkout has none — run \`npm run data\` to fetch one locally, or use the Data selector to switch to Demo. On the deployed site this file is published by the "Refresh data and deploy" workflow.`
         : `HTTP ${res.status} fetching ${url}.`
     );
     e.kind = res.status === 404 ? 'config' : 'http';
