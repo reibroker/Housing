@@ -41,8 +41,22 @@ export default function ReleasesPanel({ calendar, loading, error }) {
       </div>
     );
   }
-  if (loading || !calendar) {
+  if (loading && !calendar) {
     return <p className="small muted" style={{ padding: '32px 0', textAlign: 'center' }}>Loading the release calendar&hellip;</p>;
+  }
+
+  // No calendar is a normal state, not a failure: demo mode does not fetch one,
+  // and a fresh clone has no published snapshot yet. Say which, rather than
+  // spinning forever on a loader that will never resolve.
+  if (!calendar) {
+    return (
+      <div className="notice info">
+        <strong>No release calendar loaded</strong>
+        The calendar is published with the data snapshot. Demo mode does not fetch it, and a fresh checkout has no
+        snapshot yet &mdash; run <code>npm run data</code>, or switch the Data selector to &ldquo;Published
+        snapshot&rdquo;. On the deployed site it is always present.
+      </div>
+    );
   }
 
   const { upcoming = [], recent = [], freshness = {}, notes = {} } = calendar;

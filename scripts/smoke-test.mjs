@@ -110,6 +110,29 @@ function fredFixture(id) {
   return lines.join('\n');
 }
 
+const CALENDAR_FIXTURE = {
+  generatedAt: new Date().toISOString(),
+  upcoming: [
+    { title: 'New Residential Construction', url: 'https://www.census.gov/construction/nrc/',
+      releaseAt: '2026-09-17T08:30:00-05:00', date: '2026-09-17', time: '8:30 AM',
+      referencePeriod: 'August 2026', source: 'Census',
+      indicators: ['permitsTotal', 'startsTotal'], affects: 'Permits, starts, completions', tracked: true },
+    { title: 'Advance Retail Sales', releaseAt: '2026-09-15T08:30:00-05:00', date: '2026-09-15',
+      time: '8:30 AM', referencePeriod: 'August 2026', source: 'Census', indicators: [], affects: null, tracked: false },
+  ],
+  recent: [
+    { title: 'New Residential Sales', releaseAt: '2026-08-25T10:00:00-05:00', date: '2026-08-25',
+      time: '10:00 AM', referencePeriod: 'July 2026', source: 'Census',
+      indicators: ['newHomeSales'], affects: "New-home sales and months' supply", tracked: true },
+  ],
+  derivedRules: {},
+  freshness: {
+    monthsOfSupply: { group: 'redfin', ok: true, latest: '2026-05-01', latestValue: 3.36, ageDays: 116, intervalDays: 31, expectedMaxAgeDays: 93, overdue: true, cadence: 'monthly', rule: 'Mid-month for the prior month' },
+    unemploymentRate: { group: 'bls', ok: true, latest: '2026-07-01', latestValue: 4.1, ageDays: 30, intervalDays: 31, expectedMaxAgeDays: 93, overdue: false, cadence: 'monthly', rule: 'First Friday' },
+  },
+  notes: { census: 'Published dates.', bls: 'BLS refuses automated clients; derived cadence shown.' },
+};
+
 const REDFIN_COLS = ['period_begin','period_end','period_duration','region_type','region','state_code','property_type','is_seasonally_adjusted','median_sale_price','median_sale_price_yoy','homes_sold','homes_sold_yoy','new_listings','inventory','inventory_yoy','months_of_supply','median_dom','avg_sale_to_list','sold_above_list','price_drops'];
 const redfinRows = [REDFIN_COLS.join('\t')];
 months.forEach((t, i) => {
@@ -178,6 +201,12 @@ await page.route('**/fred.stlouisfed.org/**', (route) => {
   const id = new URL(route.request().url()).searchParams.get('id');
   route.fulfill({ status: 200, contentType: 'text/csv', headers: { 'access-control-allow-origin': '*' }, body: fredFixture(id) });
 });
+// The calendar is same-origin JSON published with the snapshot. A clean clone
+// has none, so serve it here rather than letting the live pass 404 on a file
+// whose absence is a normal development state.
+await page.route('**/data/calendar.json', (route) =>
+  route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(CALENDAR_FIXTURE) })
+);
 await page.route('**/redfin-public-data.s3**', (route) => {
   route.fulfill({ status: 200, contentType: 'application/gzip', headers: { 'access-control-allow-origin': '*' }, body: REDFIN_GZ });
 });
@@ -301,8 +330,12 @@ for (const label of ['Compare sources', 'Releases']) {
   await demoPage.getByRole('tab', { name: label }).click();
   await demoPage.waitForTimeout(600);
   const crashed = await demoPage.locator('.notice.error', { hasText: 'unrecoverable' }).count();
-  check(`demo tab "${label}" does not crash the app`, crashed === 0);
+  const content = await demoPage.locator('.card, .notice, table').count();
+  check(`demo tab "${label}" degrades without crashing`, crashed === 0 && content > 0, `${content} nodes`);
 }
+// Demo promises no network at all — including the calendar.
+check('demo mode still makes zero external requests after opening every tab', escaped.length === 0,
+  escaped.slice(0, 3).join(', '));
 
 // Demo mode must be synthetic all the way down: real Realtor.com/Zillow numbers
 // left in state by a previous mode must not appear under the synthetic banner.

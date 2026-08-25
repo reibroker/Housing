@@ -76,12 +76,19 @@ export default function useDashboardData({ stateFips = null, stateCode = null, m
     const gen = ++generation.current;
 
     // The release calendar is published with the snapshot but is not "snapshot
-    // data" — it is the agencies' schedule, it has no live-API equivalent, and
-    // it is a small same-origin file. Fetch it in every mode rather than making
-    // Releases an empty tab for anyone not on the default.
-    getCalendar()
-      .then((c) => { if (generation.current === gen && c) setCalendar(c); })
-      .catch(() => { /* Releases degrades to its own empty state */ });
+    // data" — it is the agencies' schedule and has no live-API equivalent — so
+    // it loads in live mode too rather than leaving Releases empty there.
+    //
+    // NOT in demo mode: demo guarantees zero network activity, and that
+    // guarantee is asserted by the test suite. A missing file is a normal state
+    // (a fresh clone has no snapshot), so this never throws.
+    if (mode !== 'demo') {
+      getCalendar()
+        .then((c) => { if (generation.current === gen && c) setCalendar(c); })
+        .catch(() => { /* Releases shows its own empty state */ });
+    } else {
+      setCalendar(null);
+    }
 
     // Demo mode short-circuits every network call. Nothing is fetched, so the
     // whole UI works with no key, no CORS and no connectivity -- see
