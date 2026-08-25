@@ -3,12 +3,10 @@ name: Deploy to GitHub Pages
 # Publishes the static build to GitHub Pages so the dashboard is reachable from
 # any device -- phone, tablet, someone else's laptop -- without a local install.
 #
-# The deployed build opens in DEMO mode (VITE_DEFAULT_DEMO=true) because a public
-# build has no API key and, on a static host, several upstreams will be blocked by
-# CORS anyway. Demo mode is loudly labelled as synthetic in the UI. Visitors who
-# want live data can paste their own Census key into the Settings tab and switch
-# the Data selector to "Live APIs" -- their key stays in their own browser and is
-# never part of this build.
+# The deployed build opens on the PUBLISHED SNAPSHOT: real data, fetched
+# server-side by data.yml and served from this site's own origin, so it needs no
+# API key and no CORS cooperation from the upstreams. Demo mode remains available
+# from the Data selector for offline or UI work.
 #
 # No manual setup needed: the build job calls actions/configure-pages with
 # enablement, which switches Pages on using this workflow's own pages:write
@@ -62,7 +60,9 @@ jobs:
         env:
           # Project sites are served from https://<user>.github.io/<repo>/
           VITE_BASE: /${{ github.event.repository.name }}/
-          VITE_DEFAULT_DEMO: 'true'
+          # A published snapshot now ships with the site, so the default mode is
+          # the real data rather than the synthetic placeholder.
+          VITE_DEFAULT_DEMO: 'false'
         run: npm run build
 
       - name: Add SPA + no-Jekyll files
