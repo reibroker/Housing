@@ -42,8 +42,34 @@ const BLS_KEY = process.env.BLS_API_KEY || '';
 
 const report = { generatedAt: new Date().toISOString(), node: process.version, sources: {} };
 
-/** Fetch with timeout and a descriptive error. */
-async function get(url, { as = 'json', timeoutMs = 120_000, init = {} } = {}) {
+/**
+ * Fetch with timeout, a descriptive error, and retry on TRANSIENT failures.
+ *
+ * A live run lost the whole BLS source to a single 503 ("website is temporarily
+ * busy"). These are government endpoints under bursty load at release time,
+ * which is exactly when we most want the data; one attempt is not enough. 4xx is
+ * never retried — a bad key or a wrong series id will fail identically forever.
+ */
+async function get(url, opts = {}) {
+  const { retries = 3 } = opts;
+  let lastErr;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await getOnce(url, opts);
+    } catch (e) {
+      lastErr = e;
+      const transient = e.status === undefined || e.status === 408 || e.status === 429 || e.status >= 500;
+      if (!transient || attempt === retries) break;
+      // Exponential backoff with jitter: 1s, 2s, 4s.
+      const wait = Math.round((2 ** attempt) * 1000 * (0.75 + Math.random() * 0.5));
+      console.log(`  retry ${attempt + 1}/${retries} after ${wait}ms — ${String(e.message).slice(0, 90)}`);
+      await new Promise((r) => setTimeout(r, wait));
+    }
+  }
+  throw lastErr;
+}
+
+async function getOnce(url, { as = 'json', timeoutMs = 120_000, init = {} } = {}) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
@@ -51,7 +77,9 @@ async function get(url, { as = 'json', timeoutMs = 120_000, init = {} } = {}) {
     const cors = res.headers.get('access-control-allow-origin');
     if (!res.ok) {
       const body = await res.text().catch(() => '');
-      throw new Error(`HTTP ${res.status} ${res.statusText} — ${body.replace(/<[^>]+>/g, ' ').trim().slice(0, 200)}`);
+      const err = new Error(`HTTP ${res.status} ${res.statusText} — ${body.replace(/<[^>]+>/g, ' ').trim().slice(0, 200)}`);
+      err.status = res.status;   // lets the retry loop tell transient from terminal
+      throw err;
     }
     if (as === 'stream') return { res, cors };
     const data = as === 'json' ? await res.json() : await res.text();
@@ -994,12 +1022,19 @@ if (mismatches.length) {
 // coverage. The keyless FRED mirrors carry the same releases, so the dashboard
 // stays complete either way — and each filled series is labelled so nobody
 // mistakes a mirror for the primary source.
+// Gap-fill from the mirror, for EVERY source that has one -- not just Census.
+// A transient BLS 503 used to empty the Employment tab and drop two model
+// indicators even though UNRATE, PAYEMS and the CES series had already been
+// fetched successfully in the same run.
 const filledFrom = {};
 const censusOut = { ...(census || {}) };
+const blsOut = { ...(bls || {}) };
+const targets = { census: censusOut, bls: blsOut };
 for (const [name, spec] of Object.entries(MIRRORS)) {
-  if (spec.primary !== 'census') continue;
-  if (!censusOut[name]?.length && mirrors?.[name]?.length) {
-    censusOut[name] = mirrors[name];
+  const target = targets[spec.primary];
+  if (!target) continue;
+  if (!target[name]?.length && mirrors?.[name]?.length) {
+    target[name] = mirrors[name];
     filledFrom[name] = MIRRORS[name].ids[0];
   }
 }
@@ -1009,7 +1044,7 @@ const write = (name, payload) =>
   writeFileSync(join(OUT, `${name}.json`), JSON.stringify(payload), 'utf8');
 
 write('census', { series: Object.keys(censusOut).length ? censusOut : null, generatedAt: report.generatedAt, filledFromMirror: filledFrom });
-write('bls', { series: bls, generatedAt: report.generatedAt });
+write('bls', { series: Object.keys(blsOut).length ? blsOut : null, generatedAt: report.generatedAt });
 write('fred', { series: fred, generatedAt: report.generatedAt });
 write('redfin', { series: redfin, generatedAt: report.generatedAt });
 write('resale', { series: resale, generatedAt: report.generatedAt });
@@ -1022,7 +1057,7 @@ write('zillow', { series: zillow, generatedAt: report.generatedAt, attribution: 
 // a chart full of data is worse than useless. `calendar` and `mirrors` are a
 // probe and a support layer, not user-facing sources, so they stay out.
 const DATA_SOURCES = ['census', 'bls', 'fred', 'redfin', 'resale', 'zillow'];
-const filledCount = Object.keys(filledFrom).length;
+
 
 /**
  * Hash of the DATA, deliberately excluding generatedAt.
@@ -1033,7 +1068,7 @@ const filledCount = Object.keys(filledFrom).length;
  * would redeploy twenty-four times a day to republish identical bytes.
  */
 const contentHash = createHash('sha256')
-  .update(JSON.stringify([censusOut, bls, fred, redfin, resale, zillow, mirrors]))
+  .update(JSON.stringify([censusOut, blsOut, fred, redfin, resale, zillow, mirrors]))
   .digest('hex')
   .slice(0, 16);
 
@@ -1044,11 +1079,14 @@ const manifest = {
   sources: Object.fromEntries(
     DATA_SOURCES.map((k) => {
       const v = report.sources[k] || {};
-      const shipped =
-        k === 'census'
-          ? Object.values(censusOut).some((x) => x?.length)
-          : Boolean(v.ok);
-      const viaMirror = k === 'census' && filledCount > 0;
+      const shippedFor = { census: censusOut, bls: blsOut };
+      const shipped = shippedFor[k]
+        ? Object.values(shippedFor[k]).some((x) => x?.length)
+        : Boolean(v.ok);
+      const mirrored = Object.entries(filledFrom).filter(
+        ([name]) => MIRRORS[name]?.primary === k
+      ).length;
+      const viaMirror = mirrored > 0;
       return [
         k,
         {
@@ -1057,9 +1095,11 @@ const manifest = {
           // the user still wants to know a Census key would upgrade these.
           error: shipped ? null : v.error || null,
           note: viaMirror
-            ? `${filledCount} series sourced from the FRED mirror because the primary Census API was unavailable` +
+            ? `${mirrored} series sourced from the FRED mirror because the primary source was unavailable` +
               (v.error ? ` (${v.error})` : '') +
-              '. Add a CENSUS_API_KEY secret to read the primary and turn the mirror into a cross-check.'
+              (k === 'census'
+                ? '. Add a CENSUS_API_KEY secret to read the primary and turn the mirror into a cross-check.'
+                : '. This is usually a transient upstream outage and resolves on the next run.')
             : null,
           cors: v.cors ?? null,
         },
@@ -1083,7 +1123,7 @@ const tagged = allEvents.map((e) => {
   const hit = RELEASE_MAP.find((m) => m.match.test(e.title));
   return { ...e, indicators: hit?.indicators || [], affects: hit?.label || null, tracked: Boolean(hit) };
 });
-const freshness = computeFreshness({ census: censusOut, bls, fred, redfin, resale });
+const freshness = computeFreshness({ census: censusOut, bls: blsOut, fred, redfin, resale });
 
 write('calendar', {
   generatedAt: report.generatedAt,
