@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-24T23:41:32.810Z",
+  "generatedAt": "2026-08-25T01:56:20.774Z",
   "node": "v20.20.2",
   "sources": {
     "census": {
@@ -191,84 +191,6 @@
         }
       }
     },
-    "fred": {
-      "ok": true,
-      "cors": null,
-      "series": {
-        "mortgage30yr": {
-          "ok": true,
-          "header": [
-            "observation_date",
-            "MORTGAGE30US"
-          ],
-          "n": 626,
-          "last": {
-            "date": "2026-08-20",
-            "value": 6.65
-          }
-        },
-        "consumerSentiment": {
-          "ok": true,
-          "header": [
-            "observation_date",
-            "UMCSENT"
-          ],
-          "n": 143,
-          "last": {
-            "date": "2026-06-01",
-            "value": 49.5
-          }
-        },
-        "revolvingCredit": {
-          "ok": true,
-          "header": [
-            "observation_date",
-            "REVOLSL"
-          ],
-          "n": 143,
-          "last": {
-            "date": "2026-06-01",
-            "value": 1351.0691399999998
-          }
-        },
-        "creditCardDelinquency": {
-          "ok": true,
-          "header": [
-            "observation_date",
-            "DRCCLACBS"
-          ],
-          "n": 47,
-          "last": {
-            "date": "2026-01-01",
-            "value": 2.92
-          }
-        },
-        "caseShiller": {
-          "ok": true,
-          "header": [
-            "observation_date",
-            "CSUSHPINSA"
-          ],
-          "n": 142,
-          "last": {
-            "date": "2026-05-01",
-            "value": 335.104
-          }
-        },
-        "existingHomeSales": {
-          "ok": true,
-          "header": [
-            "observation_date",
-            "EXHOSLUSM495S"
-          ],
-          "n": 13,
-          "last": {
-            "date": "2026-07-01",
-            "value": 4060000
-          }
-        }
-      }
-    },
     "resale": {
       "resolved": {
         "activeListings": {
@@ -346,6 +268,84 @@
       },
       "failed": {},
       "ok": true
+    },
+    "fred": {
+      "ok": true,
+      "cors": null,
+      "series": {
+        "mortgage30yr": {
+          "ok": true,
+          "header": [
+            "observation_date",
+            "MORTGAGE30US"
+          ],
+          "n": 626,
+          "last": {
+            "date": "2026-08-20",
+            "value": 6.65
+          }
+        },
+        "consumerSentiment": {
+          "ok": true,
+          "header": [
+            "observation_date",
+            "UMCSENT"
+          ],
+          "n": 143,
+          "last": {
+            "date": "2026-06-01",
+            "value": 49.5
+          }
+        },
+        "revolvingCredit": {
+          "ok": true,
+          "header": [
+            "observation_date",
+            "REVOLSL"
+          ],
+          "n": 143,
+          "last": {
+            "date": "2026-06-01",
+            "value": 1351.0691399999998
+          }
+        },
+        "creditCardDelinquency": {
+          "ok": true,
+          "header": [
+            "observation_date",
+            "DRCCLACBS"
+          ],
+          "n": 47,
+          "last": {
+            "date": "2026-01-01",
+            "value": 2.92
+          }
+        },
+        "caseShiller": {
+          "ok": true,
+          "header": [
+            "observation_date",
+            "CSUSHPINSA"
+          ],
+          "n": 142,
+          "last": {
+            "date": "2026-05-01",
+            "value": 335.104
+          }
+        },
+        "existingHomeSales": {
+          "ok": true,
+          "header": [
+            "observation_date",
+            "EXHOSLUSM495S"
+          ],
+          "n": 13,
+          "last": {
+            "date": "2026-07-01",
+            "value": 4060000
+          }
+        }
+      }
     },
     "zillow": {
       "attribution": "Zillow Group, Zillow Research public data",
