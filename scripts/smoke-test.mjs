@@ -208,12 +208,19 @@ check('risk band is labelled in text, not colour alone', /pressure/i.test(band),
 const rows = await page.locator('table').first().locator('tbody tr').count();
 check('breakdown table populated', rows > 0, `${rows} rows`);
 
-// Every tab must mount.
-for (const label of ['Inventory & demand', 'Construction & permits', 'Employment', 'Credit & confidence', 'Data sources', 'Settings']) {
+// Every tab must mount. "Compare sources" and "Releases" read `resale` and
+// `zillow`, which ONLY exist in snapshot mode — live mode never fetches them and
+// demo never generates them. Opening those tabs in the other two modes used to
+// take down the whole app via the error boundary, and the suite missed it because
+// it only ever opened them in the snapshot pass. Every tab, in every mode, now.
+for (const label of ['Inventory & demand', 'Construction & permits', 'Employment', 'Credit & confidence', 'Compare sources', 'Releases', 'Data sources', 'Settings']) {
   await page.getByRole('tab', { name: label }).click();
   await page.waitForTimeout(700);
-  const charts = await page.locator('.recharts-surface, table').count();
-  check(`tab "${label}" mounts with content`, charts > 0, `${charts} chart/table nodes`);
+  // "Content" includes an explanatory empty state: a tab whose source is not
+  // available in this mode should say so, not render a chart.
+  const nodes = await page.locator('.recharts-surface, table, .notice, .dropzone').count();
+  const crashed = await page.locator('.notice.error', { hasText: 'unrecoverable' }).count();
+  check(`tab "${label}" mounts with content`, nodes > 0 && crashed === 0, `${nodes} nodes, ${crashed} crashes`);
 }
 
 // Census code resolution must have matched every declared series.
@@ -288,6 +295,22 @@ for (const label of ['Inventory & demand', 'Construction & permits', 'Employment
   await demoPage.waitForTimeout(500);
   check(`demo tab "${label}" renders charts`, (await demoPage.locator('.recharts-surface').count()) > 0);
 }
+
+// The tabs backed by sources demo mode does not generate must degrade, not crash.
+for (const label of ['Compare sources', 'Releases']) {
+  await demoPage.getByRole('tab', { name: label }).click();
+  await demoPage.waitForTimeout(600);
+  const crashed = await demoPage.locator('.notice.error', { hasText: 'unrecoverable' }).count();
+  check(`demo tab "${label}" does not crash the app`, crashed === 0);
+}
+
+// Demo mode must be synthetic all the way down: real Realtor.com/Zillow numbers
+// left in state by a previous mode must not appear under the synthetic banner.
+await demoPage.getByRole('tab', { name: 'Compare sources' }).click();
+await demoPage.waitForTimeout(500);
+const demoCompare = await demoPage.locator('.app').innerText();
+check('demo mode does not leak real source data into the compare tab',
+  !/1,126,252|1,389,936|428,950/.test(demoCompare), demoCompare.slice(0, 120).replace(/\s+/g, ' '));
 await demoPage.getByRole('tab', { name: 'Overview' }).click();
 await demoPage.waitForTimeout(700);
 await demoPage.screenshot({ path: 'smoke-demo.png', fullPage: false });
@@ -428,6 +451,23 @@ check('releases tab excludes untracked releases from the main table',
 check('releases tab flags an overdue series', (await snapPage.locator('.badge.err', { hasText: 'overdue' }).count()) > 0);
 check('releases tab marks a current series', (await snapPage.locator('.badge.ok', { hasText: 'current' }).count()) > 0);
 check('releases tab states why BLS dates are derived', /BLS refuses automated clients/.test(relText));
+
+// Regression: snapshot meta is one flat object per source, but the UI indexes it
+// per series/dataset. Without fanning it out, every provenance badge outside the
+// Redfin panels silently vanished in the default mode.
+await snapPage.getByRole('tab', { name: 'Credit & confidence' }).click();
+await snapPage.waitForTimeout(500);
+check('snapshot mode shows provenance badges on per-series panels',
+  (await snapPage.locator('.badge').count()) >= 4, `${await snapPage.locator('.badge').count()} badges`);
+
+// Regression: the Census resolution table only means something for live API
+// calls. Rendering it from a snapshot marked all eleven series "no match".
+await snapPage.getByRole('tab', { name: 'Data sources' }).click();
+await snapPage.waitForTimeout(500);
+check('snapshot mode does not claim Census codes failed to resolve',
+  (await snapPage.locator('.badge.err', { hasText: 'no match' }).count()) === 0);
+const srcText = await snapPage.locator('.app').innerText();
+check('data sources tab lists Realtor.com and Zillow', /Realtor\.com/.test(srcText) && /Zillow Research/.test(srcText));
 await snapPage.getByRole('tab', { name: 'Overview' }).click();
 await snapPage.waitForTimeout(600);
 await snapPage.screenshot({ path: 'smoke-snapshot.png', fullPage: false });

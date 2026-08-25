@@ -121,8 +121,15 @@ function unemploymentDrift(series) {
 
 /**
  * Supply pipeline pressure: units under construction relative to the current
- * pace of sales. A large pipeline delivering into a slowing market is the
- * classic setup for builder price cuts.
+ * sales pace. A large pipeline delivering into a slowing market is the classic
+ * setup for builder price cuts.
+ *
+ * UNITS: `newHomeSales` is a seasonally adjusted ANNUAL rate while
+ * `underConstruction` is a level, so this ratio is in YEARS of sales, not
+ * months. The thresholds below are calibrated to that — 1.0 years is a lean
+ * pipeline, 2.5 years is the kind of overhang that precedes builder discounting.
+ * Dividing by twelve to make it monthly without recalibrating would pin the
+ * indicator at 100 permanently.
  */
 function pipelineRatio(underConstruction, newHomeSales) {
   const uc = val(underConstruction);
@@ -252,14 +259,14 @@ export const INDICATORS = [
   {
     key: 'constructionPipeline',
     group: 'New construction',
-    label: 'Units under construction per unit of monthly new-home sales',
-    unit: 'ratio',
+    label: 'Construction pipeline, in years of new-home sales',
+    unit: 'years',
     weight: 0.07,
     source: 'Census (Residential Construction + New Home Sales)',
     low: 1.0,
     high: 2.5,
     rationale:
-      'Measures how much supply is already committed and must be delivered regardless of demand. A large pipeline meeting a slowing market is what turns a slowdown into price cuts.',
+      'Units under construction divided by the annualized new-home sales rate: how long the committed pipeline would take to absorb at today\'s pace. It measures supply that must be delivered regardless of demand, which is what turns a slowdown into price cuts.',
     extract: (d) => ({
       value: pipelineRatio(d.census?.underConstruction, d.census?.newHomeSales),
       asOf: asOf(d.census?.underConstruction),

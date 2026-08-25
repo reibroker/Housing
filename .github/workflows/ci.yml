@@ -8,11 +8,6 @@ name: CI
 on:
   push:
     branches: [main]
-    # Data-refresh commits touch only the snapshot; re-running the browser test
-    # suite for them wastes minutes and tells us nothing new.
-    paths-ignore:
-      - 'public/data/**'
-      - 'data-report.json'
   pull_request:
   workflow_dispatch:
 

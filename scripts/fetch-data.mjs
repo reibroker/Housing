@@ -20,7 +20,7 @@
  * The app keeps its direct-fetch adapters: a user with their own Census key can
  * still pull live. The snapshot is the default because it always works.
  *
- * It also writes data-report.json -- a verbose diagnostic of what each source
+ * It also writes public/data/report.json -- a verbose diagnostic of what each source
  * actually returned, including the Census category/data-type codes discovered at
  * runtime. That file is the ground truth this project could not otherwise get,
  * because the development sandbox cannot reach these hosts at all.
@@ -1116,6 +1116,6 @@ if (process.env.GITHUB_OUTPUT) {
   writeFileSync(process.env.GITHUB_OUTPUT, `content_hash=${contentHash}\n`, { flag: 'a' });
 }
 const okCount = Object.values(manifest.sources).filter((s) => s.ok).length;
-console.log(`\n${okCount}/4 sources fetched successfully.`);
+console.log(`\n${okCount}/${DATA_SOURCES.length} sources fetched successfully.`);
 // Never fail the job: a partial snapshot is more useful than none, and the
 // report explains exactly what was missing.

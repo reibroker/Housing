@@ -71,7 +71,9 @@ function useDataMode() {
       // Migrate the old boolean demo flag.
       if (localStorage.getItem('hmd:demo') === 'true') return 'demo';
     } catch { /* storage blocked */ }
-    return 'snapshot';
+    // The single-file preview build sets this: that page opens from file://,
+    // where fetching a snapshot is impossible, so it must start in demo mode.
+    return String(import.meta.env.VITE_DEFAULT_DEMO) === 'true' ? 'demo' : 'snapshot';
   });
   const apply = (v) => {
     setMode(v);
@@ -138,8 +140,9 @@ export default function App() {
         <div>
           <h1>Housing Market Risk Dashboard</h1>
           <p>
-            Inventory, construction, employment, credit and confidence, pulled live from four public data sources
-            straight into your browser. No server, no database &mdash; every request below leaves from this page.
+            Inventory, construction, employment, credit and confidence from six public sources, scored into one
+            gauge. No database and no backend service &mdash; a scheduled job fetches the data and publishes it
+            with the site.
           </p>
         </div>
         <div className="masthead-actions">
@@ -739,9 +742,9 @@ export default function App() {
         <ComparePanel bundle={bundle} zillowMeta={zillow.meta} loading={anyLoading} />
       )}
       {tab === 'releases' && (
-        <ReleasesPanel calendar={calendar} loading={anyLoading} error={mode === 'snapshot' ? null : new Error('The release calendar is published with the data snapshot. Switch the Data selector to "Published snapshot" to see it.')} />
+        <ReleasesPanel calendar={calendar} loading={anyLoading} error={null} />
       )}
-      {tab === "sources" && <DataSourcesPanel census={census} bls={bls} fred={fred} redfin={redfin} demo={demo} />}
+      {tab === "sources" && <DataSourcesPanel census={census} bls={bls} fred={fred} redfin={redfin} resale={resale} zillow={zillow} demo={demo} />}
       {tab === 'settings' && <SettingsPanel onApply={reload} />}
     </div>
   );

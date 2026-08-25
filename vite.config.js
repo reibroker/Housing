@@ -22,8 +22,8 @@ import react from '@vitejs/plugin-react';
  */
 export default defineConfig({
   plugins: [react()],
-  // GitHub Pages serves a project site from /<repo>/, not /. The Pages workflow
-  // sets VITE_BASE=/Housing/; local dev and root deploys keep '/'.
+  // GitHub Pages serves a project site from /<repo>/, not /. data.yml sets
+  // VITE_BASE from the repository name; local dev and root deploys keep '/'.
   base: process.env.VITE_BASE || '/',
   server: {
     port: 5173,

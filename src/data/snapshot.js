@@ -14,15 +14,17 @@
  * amount of retrying changes that — it is the browser enforcing the publisher's
  * missing header, not a failure we can catch and work around.
  *
- * `.github/workflows/data.yml` fetches all four on a runner, where no CORS
- * policy applies, and commits the normalized series into public/data/. Loading
- * those from our own origin needs no preflight, no proxy, and no API key in the
- * bundle — the Census key stays a repository secret.
+ * `.github/workflows/data.yml` fetches every source on a runner, where no CORS
+ * policy applies, then builds and deploys in the same run. The JSON is published
+ * with the site rather than committed — snapshots are build output, and
+ * committing them hourly added roughly a gigabyte of git history a year.
+ * Reading them from our own origin needs no preflight, no proxy, and no API key
+ * in the bundle.
  *
- * The trade is freshness: the snapshot is as new as the last workflow run
- * (daily). Given that every series here publishes monthly except the weekly
- * mortgage rate, that costs nothing real, and `generatedAt` is surfaced in the
- * UI so the age is never hidden.
+ * The trade is freshness: the snapshot is as new as the last run (hourly). Every
+ * series here publishes monthly except the weekly mortgage rate, so that costs
+ * nothing real, and `generatedAt` is surfaced in the UI so the age is never
+ * hidden.
  */
 
 /** Vite rewrites BASE_URL to the deploy subpath ('/Housing/' on Pages, '/' locally). */
@@ -53,6 +55,18 @@ async function getJson(name) {
  * (no key configured) must still yield a working BLS/FRED/Redfin dashboard,
  * with the risk model renormalizing over what is present.
  */
+/**
+ * The release calendar, on its own.
+ *
+ * Published alongside the snapshot but not part of it: these are the agencies'
+ * schedules, there is no live-API equivalent to fall back to, and the file is a
+ * few KB from our own origin. Loading it independently means the Releases tab
+ * works in every data mode instead of only the default.
+ */
+export async function getCalendar() {
+  return getJson('calendar').catch(() => null);
+}
+
 export async function loadSnapshot() {
   const manifest = await getJson('manifest');
 
@@ -77,6 +91,9 @@ export async function loadSnapshot() {
       meta[name] = {
         via: 'snapshot',
         snapshot: true,
+        // Zillow's licence is "free to use with attribution", so the credit has
+        // to survive the trip from the fetcher to the page that shows it.
+        attribution: r.value.attribution || null,
         generatedAt: r.value.generatedAt || manifest.generatedAt,
         ageMs: Date.now() - new Date(r.value.generatedAt || manifest.generatedAt).getTime(),
         cached: false,

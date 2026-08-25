@@ -103,6 +103,9 @@ jobs:
         if: steps.changed.outputs.changed == 'true'
         env:
           VITE_BASE: /${{ github.event.repository.name }}/
+          # The deployed site ships a real snapshot, so it opens on that rather
+          # than the synthetic placeholder. Only the single-file preview build
+          # sets this to 'true'.
           VITE_DEFAULT_DEMO: 'false'
         run: npm run build
 

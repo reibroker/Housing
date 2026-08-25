@@ -89,10 +89,11 @@ const server = createServer(async (req, res) => {
     res.writeHead(upstreamRes.status, {
       ...cors,
       'Content-Type': upstreamRes.headers.get('content-type') || 'application/octet-stream',
-      // Pass gzip through untouched -- the browser gunzips Redfin files itself.
-      ...(upstreamRes.headers.get('content-encoding')
-        ? { 'Content-Encoding': upstreamRes.headers.get('content-encoding') }
-        : {}),
+      // Content-Encoding is deliberately NOT forwarded. Node's fetch already
+      // decompresses a gzip transfer encoding but leaves the header on the
+      // response; passing it along hands the browser plain bytes labelled gzip,
+      // which fails as ERR_CONTENT_DECODING_FAILED. Redfin's .gz payload is
+      // unaffected -- that is Content-Type, not Content-Encoding.
     });
     res.end(buf);
     console.log(`${upstreamRes.status} ${req.method} ${upstream.hostname}${upstream.pathname}`);

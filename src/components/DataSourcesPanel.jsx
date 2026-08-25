@@ -31,6 +31,7 @@ function StatusRow({ name, host, cors, keyNeeded, state, note }) {
       <td className="small">{keyNeeded}</td>
       <td><span className={`badge ${status.cls}`}>{status.text}</span></td>
       <td className="small">
+        {note && !state.error && <div className="tiny-text muted" style={{ marginBottom: 4 }}>{note}</div>}
         {state.error ? (
           <details>
             <summary>Show error</summary>
@@ -44,7 +45,7 @@ function StatusRow({ name, host, cors, keyNeeded, state, note }) {
   );
 }
 
-export default function DataSourcesPanel({ census, bls, fred, redfin, demo = false }) {
+export default function DataSourcesPanel({ census, bls, fred, redfin, resale, zillow, demo = false }) {
   const resolution = census.meta?.resolution || {};
   const raw = census.meta?.rawSeries || {};
 
@@ -53,16 +54,19 @@ export default function DataSourcesPanel({ census, bls, fred, redfin, demo = fal
       {demo && (
         <div className="notice demo-banner">
           <strong>Demo mode is on &mdash; nothing below is being fetched</strong>
-          Source status, code resolution and quota counts are only meaningful against live APIs. Switch the Data
-          selector in the filter row back to &ldquo;Live APIs&rdquo; to exercise them.
+          Source status, code resolution and quota counts describe live API calls. Switch the Data selector back to
+          &ldquo;Published snapshot&rdquo; for real data, or &ldquo;Live APIs&rdquo; if you have a Census key and
+          want the browser to fetch directly.
         </div>
       )}
       <section className="card">
         <div className="card-head"><h3>Sources</h3></div>
         <p className="card-sub">
-          Every request in this app goes from your browser straight to these hosts. There is no server in between,
-          which is also why the CORS column matters: a host that omits <code>Access-Control-Allow-Origin</code>
-          answers the request fine, but the browser refuses to hand the response to the page.
+          The CORS column is why this app has a scheduled fetch rather than reading everything in the page: a host
+          that omits <code>Access-Control-Allow-Origin</code> answers the request fine, but the browser refuses to
+          hand the response to the page. In the default snapshot mode these were read server-side, where that
+          restriction does not apply; in &ldquo;Live APIs&rdquo; mode your browser calls them directly and the ones
+          marked as sending no CORS headers will fail.
         </p>
         <div className="table-wrap">
           <table>
@@ -94,16 +98,37 @@ export default function DataSourcesPanel({ census, bls, fred, redfin, demo = fal
               <StatusRow
                 name="Redfin Data Center"
                 host="redfin-public-data.s3.us-west-2.amazonaws.com"
-                cors="A data bucket, not an API — may block browser reads. File-drop fallback provided."
+                cors="No CORS headers — a data bucket, not an API. Read server-side; file-drop fallback in live mode."
                 keyNeeded="None."
                 state={redfin}
+                note="Publication stalled: their file was last modified 2 Jun 2026."
+              />
+              <StatusRow
+                name="Realtor.com residential listings"
+                host="fred.stlouisfed.org (ACTLISCOUUS, NEWLISCOUUS, …)"
+                cors="No CORS headers; read server-side."
+                keyNeeded="None."
+                state={resale || { loading: false }}
+                note="Live stand-in for the stalled Redfin series."
+              />
+              <StatusRow
+                name="Zillow Research"
+                host="files.zillowstatic.com"
+                cors="Read server-side."
+                keyNeeded="None."
+                state={zillow || { loading: false }}
+                note="Comparison page and the ZHVF forecast. © Zillow Group, used with attribution."
               />
             </tbody>
           </table>
         </div>
       </section>
 
-      {!demo && (
+      {/* Runtime code resolution only happens when the browser talks to the
+          Census API directly. In snapshot mode the resolving was done in CI, so
+          rendering this table would mark all eleven series "no match" and tell
+          the user Census renamed every code when nothing is wrong. */}
+      {!demo && Object.keys(resolution).length > 0 && (
       <section className="card">
         <div className="card-head"><h3>Census series resolution</h3></div>
         <p className="card-sub">

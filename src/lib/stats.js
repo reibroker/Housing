@@ -8,12 +8,20 @@
 
 /** A time series point is { date: 'YYYY-MM-DD', value: number|null }. */
 
+/**
+ * Every helper below tolerates a missing series, not just missing values.
+ *
+ * A source that is absent entirely — `resale` and `zillow` exist only in
+ * snapshot mode — arrives as `undefined`, and spreading that threw
+ * "series is not iterable", which the error boundary turned into a blank page.
+ * A chart with no data is a normal state; it must never be an exception.
+ */
 export function sortByDate(series) {
-  return [...series].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  return [...(series || [])].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 }
 
 export function dropNulls(series) {
-  return series.filter((p) => p.value !== null && p.value !== undefined && Number.isFinite(p.value));
+  return (series || []).filter((p) => p.value !== null && p.value !== undefined && Number.isFinite(p.value));
 }
 
 /** Most recent point with an actual value. */

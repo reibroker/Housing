@@ -268,15 +268,18 @@ to each panel:
 npm run build && node scripts/smoke-test.mjs
 ```
 
-26 checks in two passes.
+48 checks in three passes.
 
-**Live pass** — the built app in headless Chromium with all four upstream hosts intercepted and
+**Live pass** — the built app in headless Chromium with every upstream host intercepted and
 served synthetic-but-correctly-shaped payloads. Asserts: no console errors or page exceptions,
 each parser (Census JSON, BLS envelope, FRED CSV, gzipped TSV) produces charts, the gauge renders
 a numeric score at 100% coverage, all Census codes resolve, every tab mounts, the table-view
 toggle works.
 
-**Demo pass** — a second page with *nothing* intercepted and no keys set. Asserts that the app
+**Snapshot pass** — the default mode, served fixture JSON from the app's own origin; also covers
+the Compare and Releases tabs.
+
+**Demo pass** — a page with *nothing* intercepted and no keys set. Asserts that the app
 still renders a full dashboard, that it issues **zero** requests to any non-local host, that the
 synthetic-data banner and gauge stamp are present, and that the gauge's SVG arcs use the correct
 `large-arc-flag` at scores above 50 (a real bug this caught: deriving that flag from the score
@@ -299,17 +302,17 @@ anywhere that serves files. Two caveats:
 
 ### GitHub Pages (included)
 
-`.github/workflows/pages.yml` builds and publishes on every push to `main`. One-time setup:
-**repository Settings → Pages → Source: GitHub Actions**. After that the dashboard is reachable
-from any device — including a tablet — at `https://<user>.github.io/<repo>/`.
+`.github/workflows/data.yml` is the **only** deploy path: it fetches every source, builds, and
+publishes — hourly and on every push to `main`. One-time setup: **repository Settings → Pages →
+Source: GitHub Actions**. After that the dashboard is reachable from any device at
+`https://<user>.github.io/<repo>/`.
 
-The Pages build sets `VITE_DEFAULT_DEMO=true`, so the public page opens in demo mode rather
-than blank: a public build has no API key, and on a static host several upstreams are
-CORS-blocked anyway. Visitors who want live data paste their own Census key into Settings and
-flip the Data selector — their key stays in their browser and is never part of the build.
+There is deliberately no second Pages workflow. Once the snapshot left git, a workflow that built
+without fetching would have deployed an empty data directory and wiped the live data — silently,
+with every check green.
 
-`VITE_BASE` is set to `/<repo>/` by the workflow because project sites are not served from the
-domain root. Local dev and root deploys keep `/`.
+The deployed site opens on the **published snapshot** (real data). `VITE_BASE` is set to `/<repo>/`
+by the workflow because project sites are not served from the domain root; local dev keeps `/`.
 
 ### Single-file preview build
 

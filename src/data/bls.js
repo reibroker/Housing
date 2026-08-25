@@ -45,7 +45,7 @@
  * config layer clamps the history window to 20 years.
  */
 
-import { request, buildAttemptUrls } from '../lib/http.js';
+import { request } from '../lib/http.js';
 import { cacheGet, cacheSet, cacheGetStale } from '../lib/cache.js';
 import { getConfig } from '../config/env.js';
 import { num } from '../lib/tsv.js';

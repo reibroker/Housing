@@ -19,7 +19,7 @@ import { loadFred } from '../data/fred.js';
 import { loadRedfin, loadRedfinFromFile } from '../data/redfin.js';
 import { computeRiskScore, historicalScore } from '../model/riskModel.js';
 import { generateDemoData } from '../data/demo.js';
-import { loadSnapshot } from '../data/snapshot.js';
+import { loadSnapshot, getCalendar } from '../data/snapshot.js';
 import { getConfig } from '../config/env.js';
 
 const emptySource = () => ({ data: null, meta: null, error: null, loading: false });
@@ -75,6 +75,14 @@ export default function useDashboardData({ stateFips = null, stateCode = null, m
   const loadAll = useCallback(async () => {
     const gen = ++generation.current;
 
+    // The release calendar is published with the snapshot but is not "snapshot
+    // data" — it is the agencies' schedule, it has no live-API equivalent, and
+    // it is a small same-origin file. Fetch it in every mode rather than making
+    // Releases an empty tab for anyone not on the default.
+    getCalendar()
+      .then((c) => { if (generation.current === gen && c) setCalendar(c); })
+      .catch(() => { /* Releases degrades to its own empty state */ });
+
     // Demo mode short-circuits every network call. Nothing is fetched, so the
     // whole UI works with no key, no CORS and no connectivity -- see
     // src/data/demo.js for why this exists and what the numbers are (and
@@ -87,37 +95,57 @@ export default function useDashboardData({ stateFips = null, stateCode = null, m
       try {
         const snap = await loadSnapshot();
         if (generation.current !== gen) return;
-        const put = (setter, key) =>
+        // The UI indexes meta per SERIES (fred.meta?.mortgage30yr) and per
+        // DATASET (census.meta?.resconst), because that is the shape the live
+        // adapters produce. The snapshot has one flat meta per source, so fan it
+        // out over the keys — otherwise every provenance badge outside the
+        // Redfin panels silently disappears in the default mode.
+        const put = (setter, key) => {
+          const base = { ...(snap.meta[key] || {}), manifest: snap.manifest };
+          const perSeries = Object.fromEntries(
+            Object.keys(snap.series[key] || {}).map((seriesKey) => [seriesKey, base])
+          );
+          // Census charts key their meta off the EITS dataset name.
+          const perDataset = key === 'census'
+            ? { resconst: base, ressales: base, hv: base }
+            : {};
           setter({
             data: snap.series[key],
-            meta: { ...(snap.meta[key] || {}), manifest: snap.manifest },
+            meta: { ...base, ...perSeries, ...perDataset },
             errors: {},
             error: snap.errors[key] || null,
             loading: false,
           });
+        };
         put(setCensus, 'census');
         put(setBls, 'bls');
         put(setFred, 'fred');
         put(setRedfin, 'redfin');
         put(setResale, 'resale');
         put(setZillow, 'zillow');
-        setCalendar(snap.calendar);
+        if (snap.calendar) setCalendar(snap.calendar);
       } catch (e) {
         if (generation.current !== gen) return;
         // A missing or unreadable manifest is one failure, not four -- report it
         // identically on every panel so the cause is obvious.
         const fail = (setter) => setter({ data: null, meta: null, error: e, loading: false });
-        [setCensus, setBls, setFred, setRedfin].forEach(fail);
+        [setCensus, setBls, setFred, setRedfin, setResale, setZillow].forEach(fail);
       }
       return;
     }
 
     if (demo) {
       const d = generateDemoData(getConfig().historyYears);
-      setCensus({ data: d.census, meta: { ...d.meta, ...d.censusMeta, resolution: {}, rawSeries: {} }, error: null, loading: false });
+      setCensus({ data: d.census, meta: { ...d.meta, ...d.censusMeta, rawSeries: {} }, error: null, loading: false });
       setBls({ data: d.bls, meta: d.meta, error: null, loading: false });
       setFred({ data: d.fred, meta: { ...d.meta, ...d.fredMeta }, errors: {}, error: null, loading: false });
       setRedfin({ data: d.redfin, meta: d.meta, error: null, loading: false });
+      // Demo mode must be synthetic ALL the way down. These two are not
+      // generated, and leaving whatever the previous mode loaded in state put
+      // real Realtor.com and Zillow numbers on a page captioned "every number
+      // here is synthetic" — and fed them to the risk model.
+      setResale(emptySource());
+      setZillow(emptySource());
       return;
     }
 
@@ -129,7 +157,16 @@ export default function useDashboardData({ stateFips = null, stateCode = null, m
     loadCensus()
       .then((r) => {
         if (generation.current !== gen) return;
-        setCensus({ data: r.series, meta: { ...r.meta, resolution: r.resolution, rawSeries: r.rawSeries }, error: null, loading: false });
+        // loadCensus resolves even when every dataset failed, handing back an
+        // object of nulls. Reporting that as success painted a green "ok" badge
+        // over six empty charts; surface the first real reason instead.
+        const anySeries = Object.values(r.series || {}).some((v) => v?.length);
+        setCensus({
+          data: r.series,
+          meta: { ...r.meta, resolution: r.resolution, rawSeries: r.rawSeries },
+          error: anySeries ? null : Object.values(r.errors || {})[0] || null,
+          loading: false,
+        });
       })
       .catch((e) => {
         if (generation.current !== gen) return;
@@ -149,7 +186,10 @@ export default function useDashboardData({ stateFips = null, stateCode = null, m
     loadFred()
       .then((r) => {
         if (generation.current !== gen) return;
-        setFred({ data: r.series, meta: r.meta, error: null, loading: false });
+        // Per-series errors drive six ChartCards (error={fred.errors?.caseShiller});
+        // dropping them left those props permanently undefined, so a discontinued
+        // FRED series produced an empty chart and no explanation.
+        setFred({ data: r.series, meta: r.meta, errors: r.errors, error: null, loading: false });
       })
       .catch((e) => {
         if (generation.current !== gen) return;
@@ -207,6 +247,6 @@ export default function useDashboardData({ stateFips = null, stateCode = null, m
     riskHistory,
     reload: loadAll,
     ingestRedfinFile,
-    anyLoading: census.loading || bls.loading || fred.loading || redfin.loading,
+    anyLoading: census.loading || bls.loading || fred.loading || redfin.loading || resale.loading || zillow.loading,
   };
 }
