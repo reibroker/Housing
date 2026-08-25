@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-25T11:49:52.912Z",
+  "generatedAt": "2026-08-25T13:16:56.735Z",
   "node": "v20.20.2",
   "sources": {
     "census": {
@@ -191,6 +191,97 @@
       "parsed": 169,
       "ok": true
     },
+    "zillow": {
+      "attribution": "Zillow Group, Zillow Research public data",
+      "resolved": {
+        "homeValueIndex": {
+          "n": 319,
+          "dateColumns": 319,
+          "first": {
+            "date": "2000-01-01",
+            "value": 124760.35338645264
+          },
+          "last": {
+            "date": "2026-07-01",
+            "value": 371774.01398407604
+          }
+        },
+        "homeValueForecast": {
+          "n": 3,
+          "dateColumns": 3,
+          "first": {
+            "date": "2026-08-01",
+            "value": 0.1
+          },
+          "last": {
+            "date": "2027-07-01",
+            "value": 1.1
+          }
+        },
+        "inventory": {
+          "n": 101,
+          "dateColumns": 101,
+          "first": {
+            "date": "2018-03-01",
+            "value": 1421529
+          },
+          "last": {
+            "date": "2026-07-01",
+            "value": 1389936
+          }
+        },
+        "newListings": {
+          "n": 101,
+          "dateColumns": 101,
+          "first": {
+            "date": "2018-03-01",
+            "value": 391819
+          },
+          "last": {
+            "date": "2026-07-01",
+            "value": 404817
+          }
+        },
+        "daysToPending": {
+          "n": 101,
+          "dateColumns": 101,
+          "first": {
+            "date": "2018-03-01",
+            "value": 31
+          },
+          "last": {
+            "date": "2026-07-01",
+            "value": 21
+          }
+        },
+        "priceCutShare": {
+          "n": 101,
+          "dateColumns": 101,
+          "first": {
+            "date": "2018-03-01",
+            "value": 0.1466661174748287
+          },
+          "last": {
+            "date": "2026-07-01",
+            "value": 0.25569782331498686
+          }
+        },
+        "medianSalePrice": {
+          "n": 95,
+          "dateColumns": 95,
+          "first": {
+            "date": "2018-08-01",
+            "value": 225812
+          },
+          "last": {
+            "date": "2026-06-01",
+            "value": 371427
+          }
+        }
+      },
+      "failed": {},
+      "ok": true
+    },
     "fred": {
       "ok": true,
       "cors": null,
@@ -341,97 +432,6 @@
           "last": {
             "date": "2026-07-01",
             "value": 3.328823645320197
-          }
-        }
-      },
-      "failed": {},
-      "ok": true
-    },
-    "zillow": {
-      "attribution": "Zillow Group, Zillow Research public data",
-      "resolved": {
-        "homeValueIndex": {
-          "n": 319,
-          "dateColumns": 319,
-          "first": {
-            "date": "2000-01-01",
-            "value": 124760.35338645264
-          },
-          "last": {
-            "date": "2026-07-01",
-            "value": 371774.01398407604
-          }
-        },
-        "homeValueForecast": {
-          "n": 3,
-          "dateColumns": 3,
-          "first": {
-            "date": "2026-08-01",
-            "value": 0.1
-          },
-          "last": {
-            "date": "2027-07-01",
-            "value": 1.1
-          }
-        },
-        "inventory": {
-          "n": 101,
-          "dateColumns": 101,
-          "first": {
-            "date": "2018-03-01",
-            "value": 1421529
-          },
-          "last": {
-            "date": "2026-07-01",
-            "value": 1389936
-          }
-        },
-        "newListings": {
-          "n": 101,
-          "dateColumns": 101,
-          "first": {
-            "date": "2018-03-01",
-            "value": 391819
-          },
-          "last": {
-            "date": "2026-07-01",
-            "value": 404817
-          }
-        },
-        "daysToPending": {
-          "n": 101,
-          "dateColumns": 101,
-          "first": {
-            "date": "2018-03-01",
-            "value": 31
-          },
-          "last": {
-            "date": "2026-07-01",
-            "value": 21
-          }
-        },
-        "priceCutShare": {
-          "n": 101,
-          "dateColumns": 101,
-          "first": {
-            "date": "2018-03-01",
-            "value": 0.1466661174748287
-          },
-          "last": {
-            "date": "2026-07-01",
-            "value": 0.25569782331498686
-          }
-        },
-        "medianSalePrice": {
-          "n": 95,
-          "dateColumns": 95,
-          "first": {
-            "date": "2018-08-01",
-            "value": 225812
-          },
-          "last": {
-            "date": "2026-06-01",
-            "value": 371427
           }
         }
       },
@@ -674,7 +674,7 @@
       "ok": true,
       "latest": "2026-07-01",
       "latestValue": 1239,
-      "ageDays": 55,
+      "ageDays": 56,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": false,
@@ -686,7 +686,7 @@
       "ok": true,
       "latest": "2026-07-01",
       "latestValue": 808,
-      "ageDays": 55,
+      "ageDays": 56,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": false,
@@ -698,7 +698,7 @@
       "ok": true,
       "latest": "2026-07-01",
       "latestValue": 1443,
-      "ageDays": 55,
+      "ageDays": 56,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": false,
@@ -710,7 +710,7 @@
       "ok": true,
       "latest": "2026-07-01",
       "latestValue": 894,
-      "ageDays": 55,
+      "ageDays": 56,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": false,
@@ -722,7 +722,7 @@
       "ok": true,
       "latest": "2026-07-01",
       "latestValue": 1262,
-      "ageDays": 55,
+      "ageDays": 56,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": false,
@@ -734,7 +734,7 @@
       "ok": true,
       "latest": "2026-07-01",
       "latestValue": 1212,
-      "ageDays": 55,
+      "ageDays": 56,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": false,
@@ -746,7 +746,7 @@
       "ok": true,
       "latest": "2026-06-01",
       "latestValue": 628,
-      "ageDays": 85,
+      "ageDays": 86,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": false,
@@ -758,7 +758,7 @@
       "ok": true,
       "latest": "2026-06-01",
       "latestValue": 9.3,
-      "ageDays": 85,
+      "ageDays": 86,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": false,
@@ -770,7 +770,7 @@
       "ok": true,
       "latest": "2026-06-01",
       "latestValue": 485,
-      "ageDays": 85,
+      "ageDays": 86,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": false,
@@ -782,7 +782,7 @@
       "ok": true,
       "latest": "2026-04-01",
       "latestValue": 1.2,
-      "ageDays": 146,
+      "ageDays": 147,
       "intervalDays": 92,
       "expectedMaxAgeDays": 276,
       "overdue": false,
@@ -794,7 +794,7 @@
       "ok": true,
       "latest": "2026-04-01",
       "latestValue": 7.3,
-      "ageDays": 146,
+      "ageDays": 147,
       "intervalDays": 92,
       "expectedMaxAgeDays": 276,
       "overdue": false,
@@ -806,7 +806,7 @@
       "ok": true,
       "latest": "2026-07-01",
       "latestValue": 914.6,
-      "ageDays": 55,
+      "ageDays": 56,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": false,
@@ -818,7 +818,7 @@
       "ok": true,
       "latest": "2026-07-01",
       "latestValue": 5271.2,
-      "ageDays": 55,
+      "ageDays": 56,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": false,
@@ -830,7 +830,7 @@
       "ok": true,
       "latest": "2026-07-01",
       "latestValue": 8343,
-      "ageDays": 55,
+      "ageDays": 56,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": false,
@@ -842,7 +842,7 @@
       "ok": true,
       "latest": "2026-07-01",
       "latestValue": 158858,
-      "ageDays": 55,
+      "ageDays": 56,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": false,
@@ -854,7 +854,7 @@
       "ok": true,
       "latest": "2026-07-01",
       "latestValue": 4.1,
-      "ageDays": 55,
+      "ageDays": 56,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": false,
@@ -866,7 +866,7 @@
       "ok": true,
       "latest": "2026-07-01",
       "latestValue": 429.095,
-      "ageDays": 55,
+      "ageDays": 56,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": false,
@@ -882,7 +882,7 @@
       "ok": true,
       "latest": "2026-08-20",
       "latestValue": 6.65,
-      "ageDays": 5,
+      "ageDays": 6,
       "intervalDays": 7,
       "expectedMaxAgeDays": 45,
       "overdue": false,
@@ -894,7 +894,7 @@
       "ok": true,
       "latest": "2026-06-01",
       "latestValue": 49.5,
-      "ageDays": 85,
+      "ageDays": 86,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": false,
@@ -906,7 +906,7 @@
       "ok": true,
       "latest": "2026-06-01",
       "latestValue": 1351.0691399999998,
-      "ageDays": 85,
+      "ageDays": 86,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": false,
@@ -918,7 +918,7 @@
       "ok": true,
       "latest": "2026-01-01",
       "latestValue": 2.92,
-      "ageDays": 236,
+      "ageDays": 237,
       "intervalDays": 92,
       "expectedMaxAgeDays": 276,
       "overdue": false,
@@ -930,7 +930,7 @@
       "ok": true,
       "latest": "2026-05-01",
       "latestValue": 335.104,
-      "ageDays": 116,
+      "ageDays": 117,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": true,
@@ -942,7 +942,7 @@
       "ok": true,
       "latest": "2026-07-01",
       "latestValue": 4060000,
-      "ageDays": 55,
+      "ageDays": 56,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": false,
@@ -954,7 +954,7 @@
       "ok": true,
       "latest": "2026-05-01",
       "latestValue": 440410.810237043,
-      "ageDays": 116,
+      "ageDays": 117,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": true,
@@ -966,7 +966,7 @@
       "ok": true,
       "latest": "2026-05-01",
       "latestValue": 2.2954688389999998,
-      "ageDays": 116,
+      "ageDays": 117,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": true,
@@ -978,7 +978,7 @@
       "ok": true,
       "latest": "2026-05-01",
       "latestValue": 432014.72441824,
-      "ageDays": 116,
+      "ageDays": 117,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": true,
@@ -990,7 +990,7 @@
       "ok": true,
       "latest": "2026-05-01",
       "latestValue": 0.5739396192,
-      "ageDays": 116,
+      "ageDays": 117,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": true,
@@ -1002,7 +1002,7 @@
       "ok": true,
       "latest": "2026-07-01",
       "latestValue": 423732,
-      "ageDays": 55,
+      "ageDays": 56,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": false,
@@ -1014,7 +1014,7 @@
       "ok": true,
       "latest": "2026-05-01",
       "latestValue": 1397071.40811108,
-      "ageDays": 116,
+      "ageDays": 117,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": true,
@@ -1026,7 +1026,7 @@
       "ok": true,
       "latest": "2026-05-01",
       "latestValue": -9.141150772,
-      "ageDays": 116,
+      "ageDays": 117,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": true,
@@ -1038,7 +1038,7 @@
       "ok": true,
       "latest": "2026-05-01",
       "latestValue": 3.362799658,
-      "ageDays": 116,
+      "ageDays": 117,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": true,
@@ -1050,7 +1050,7 @@
       "ok": true,
       "latest": "2026-07-01",
       "latestValue": 57,
-      "ageDays": 55,
+      "ageDays": 56,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": false,
@@ -1062,7 +1062,7 @@
       "ok": true,
       "latest": "2026-05-01",
       "latestValue": 98.60065156,
-      "ageDays": 116,
+      "ageDays": 117,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": true,
@@ -1074,7 +1074,7 @@
       "ok": true,
       "latest": "2026-05-01",
       "latestValue": 25.92082096,
-      "ageDays": 116,
+      "ageDays": 117,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": true,
@@ -1086,7 +1086,7 @@
       "ok": true,
       "latest": "2026-05-01",
       "latestValue": 19.956237169999998,
-      "ageDays": 116,
+      "ageDays": 117,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": true,
@@ -1098,7 +1098,7 @@
       "ok": true,
       "latest": "2026-07-01",
       "latestValue": 1126252,
-      "ageDays": 55,
+      "ageDays": 56,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": false,
@@ -1110,7 +1110,7 @@
       "ok": true,
       "latest": "2026-07-01",
       "latestValue": 404344,
-      "ageDays": 55,
+      "ageDays": 56,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": false,
@@ -1122,7 +1122,7 @@
       "ok": true,
       "latest": "2026-07-01",
       "latestValue": 428950,
-      "ageDays": 55,
+      "ageDays": 56,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": false,
@@ -1134,7 +1134,7 @@
       "ok": true,
       "latest": "2026-07-01",
       "latestValue": 4.6,
-      "ageDays": 55,
+      "ageDays": 56,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": false,
@@ -1146,7 +1146,7 @@
       "ok": true,
       "latest": "2026-07-01",
       "latestValue": 35.90173424775273,
-      "ageDays": 55,
+      "ageDays": 56,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": false,
@@ -1158,7 +1158,7 @@
       "ok": true,
       "latest": "2026-07-01",
       "latestValue": 3.328823645320197,
-      "ageDays": 55,
+      "ageDays": 56,
       "intervalDays": 31,
       "expectedMaxAgeDays": 93,
       "overdue": false,
