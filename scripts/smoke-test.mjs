@@ -361,7 +361,17 @@ const SNAP = {
   manifest: {
     generatedAt: new Date(Date.now() - 3 * 3600_000).toISOString(),
     historyYears: 12,
-    sources: { census: { ok: true }, bls: { ok: true }, fred: { ok: true }, redfin: { ok: true } },
+    // `cors` mirrors what the fetcher really records: BLS sends '*', the rest
+    // send nothing. The CORS column is rendered from these, so the fixture has
+    // to carry them or the test is checking the wrong thing.
+    sources: {
+      census: { ok: true, cors: null, note: 'Census series retrieved via FRED, which redistributes the release.' },
+      bls: { ok: true, cors: '*' },
+      fred: { ok: true, cors: null },
+      redfin: { ok: true, cors: null },
+      resale: { ok: true, cors: null },
+      zillow: { ok: true, cors: null },
+    },
   },
   census: { generatedAt: new Date().toISOString(), series: {
     permitsTotal: snapSeries(1450), permitsSingle: snapSeries(950),
