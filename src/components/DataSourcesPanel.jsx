@@ -12,7 +12,43 @@ import { BLS_SERIES } from '../data/bls.js';
 import { FRED_SERIES } from '../data/fred.js';
 import { REDFIN_FILES } from '../data/redfin.js';
 
-function StatusRow({ name, host, cors, keyNeeded, state, note }) {
+/**
+ * Render the CORS column from what we MEASURED, not from prose.
+ *
+ * The hardcoded descriptions had drifted badly from reality: the page claimed
+ * BLS "often absent" when it measurably sends `*`, claimed FRED was "usually
+ * readable" when it sends no header at all, and claimed Census "works directly"
+ * on a host we have never once successfully called. The fetcher already records
+ * the real `access-control-allow-origin` per source and hands it to the UI —
+ * this just uses it, and says "not measured" rather than guessing.
+ */
+function CorsCell({ measured, note }) {
+  if (measured === '*' || (typeof measured === 'string' && measured.length)) {
+    return (
+      <>
+        <div>
+          Sends <code className="tiny-text">Access-Control-Allow-Origin: {measured}</code> — a browser can read
+          this host directly.
+        </div>
+        {note && <div className="tiny-text muted">{note}</div>}
+      </>
+    );
+  }
+  if (measured === null || measured === undefined) {
+    return (
+      <>
+        <div>
+          Sends no <code className="tiny-text">Access-Control-Allow-Origin</code> header, so a browser cannot read
+          it directly. Fetched server-side instead.
+        </div>
+        {note && <div className="tiny-text muted">{note}</div>}
+      </>
+    );
+  }
+  return <span className="muted">Not measured.</span>;
+}
+
+function StatusRow({ name, host, cors, corsNote, measuredCors, keyNeeded, state, note }) {
   const status = state.error
     ? { cls: 'err', text: 'failed' }
     : state.loading
@@ -27,7 +63,11 @@ function StatusRow({ name, host, cors, keyNeeded, state, note }) {
         <div style={{ fontWeight: 500 }}>{name}</div>
         <div className="tiny-text muted"><code>{host}</code></div>
       </td>
-      <td className="small">{cors}</td>
+      <td className="small">
+        {measuredCors === 'unmeasured'
+          ? <span className="muted">Not measured — this host has not been successfully called.</span>
+          : <CorsCell measured={measuredCors} note={corsNote} />}
+      </td>
       <td className="small">{keyNeeded}</td>
       <td><span className={`badge ${status.cls}`}>{status.text}</span></td>
       <td className="small">
@@ -47,6 +87,16 @@ function StatusRow({ name, host, cors, keyNeeded, state, note }) {
 
 export default function DataSourcesPanel({ census, bls, fred, redfin, resale, zillow, demo = false }) {
   const resolution = census.meta?.resolution || {};
+  // The fetcher records the real ACAO header per source; 'unmeasured' means the
+  // host was never successfully reached, which is different from "no header".
+  const manifest = census.meta?.manifest || bls.meta?.manifest || fred.meta?.manifest;
+  const corsOf = (key) => {
+    const src = manifest?.sources?.[key];
+    if (!src) return 'unmeasured';
+    if (!src.ok && src.error) return 'unmeasured';
+    return src.cors ?? null;
+  };
+  const noteOf = (key) => manifest?.sources?.[key]?.note || null;
   const raw = census.meta?.rawSeries || {};
 
   return (
@@ -77,28 +127,31 @@ export default function DataSourcesPanel({ census, bls, fred, redfin, resale, zi
               <StatusRow
                 name="Census Bureau — Economic Indicators"
                 host="api.census.gov"
-                cors="Sends Access-Control-Allow-Origin: * — works directly."
-                keyNeeded="Required. Unkeyed requests are rejected."
+                measuredCors={corsOf('census')}
+                corsNote={noteOf('census')}
+                keyNeeded="A key is required for the API. The bulk files below need none."
                 state={census}
+                note={noteOf('census')}
               />
               <StatusRow
                 name="Bureau of Labor Statistics"
                 host="api.bls.gov"
-                cors="Not documented; often absent. App falls back to a proxy if configured."
+                measuredCors={corsOf('bls')}
                 keyNeeded="Optional. 25/day without, 500/day with."
                 state={bls}
               />
               <StatusRow
                 name="FRED — consumer credit, sentiment, rates"
                 host="fred.stlouisfed.org"
-                cors="Keyless CSV endpoint; usually readable."
+                measuredCors={corsOf('fred')}
                 keyNeeded="Not needed in CSV mode."
                 state={fred}
               />
               <StatusRow
                 name="Redfin Data Center"
                 host="redfin-public-data.s3.us-west-2.amazonaws.com"
-                cors="No CORS headers — a data bucket, not an API. Read server-side; file-drop fallback in live mode."
+                measuredCors={corsOf('redfin')}
+                corsNote="A data bucket, not an API. File-drop fallback offered in live mode."
                 keyNeeded="None."
                 state={redfin}
                 note="Publication stalled: their file was last modified 2 Jun 2026."
@@ -106,7 +159,7 @@ export default function DataSourcesPanel({ census, bls, fred, redfin, resale, zi
               <StatusRow
                 name="Realtor.com residential listings"
                 host="fred.stlouisfed.org (ACTLISCOUUS, NEWLISCOUUS, …)"
-                cors="No CORS headers; read server-side."
+                measuredCors={corsOf('resale')}
                 keyNeeded="None."
                 state={resale || { loading: false }}
                 note="Live stand-in for the stalled Redfin series."
@@ -114,7 +167,7 @@ export default function DataSourcesPanel({ census, bls, fred, redfin, resale, zi
               <StatusRow
                 name="Zillow Research"
                 host="files.zillowstatic.com"
-                cors="Read server-side."
+                measuredCors={corsOf('zillow')}
                 keyNeeded="None."
                 state={zillow || { loading: false }}
                 note="Comparison page and the ZHVF forecast. © Zillow Group, used with attribution."

@@ -701,6 +701,61 @@ function computeFreshness(bundle) {
   return out;
 }
 
+
+/**
+ * Keyless Census: the same releases, as bulk files.
+ *
+ * The API needs a key, and obtaining one means registering an account, which is
+ * not something to do on someone else's behalf. But the Census Bureau also
+ * publishes every Economic Indicator time series as plain downloadable files
+ * under /econ/currentdata/ — no key, no account, and robots.txt permits /econ/.
+ *
+ * If these parse, the dashboard reads the PRIMARY Census release directly and
+ * the API key stops being relevant at all. They would also settle the
+ * long-standing unknown in src/data/census.js: the real category/data-type code
+ * values, which the API does not expose through its metadata endpoints and which
+ * the client currently guesses at.
+ */
+const CENSUS_BULK_CANDIDATES = [
+  { id: 'resconst_zip', url: 'https://www.census.gov/econ/currentdata/datasets/RESCONST-mf.zip', binary: true },
+  { id: 'ressales_zip', url: 'https://www.census.gov/econ/currentdata/datasets/RESSALES-mf.zip', binary: true },
+  { id: 'hv_zip',       url: 'https://www.census.gov/econ/currentdata/datasets/HV-mf.zip', binary: true },
+  // The dbsearch endpoint that powers their own chart tool; returns CSV.
+  { id: 'dbsearch_csv', url: 'https://www.census.gov/econ/currentdata/export/csv?programCode=RESCONST&timeSlotType=12&startYear=2015&endYear=2026&categoryCode=APERMITS&dataTypeCode=TOTAL&geoLevelCode=US&adjusted=1&errorData=0&internal=false' },
+  { id: 'dbsearch_alt', url: 'https://www.census.gov/econ/currentdata/dbsearch?program=RESCONST&startYear=2015&endYear=2026&categories[]=APERMITS&dataType=TOTAL&geoLevel=US&adjusted=yes&submit=GET+DATA&format=csv' },
+];
+
+async function probeCensusBulk() {
+  const info = { robots: await robotsAllows('https://www.census.gov', '/econ/'), probes: {} };
+  for (const c of CENSUS_BULK_CANDIDATES) {
+    try {
+      const res = await fetch(c.url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(60_000) });
+      const meta = { status: res.status, type: res.headers.get('content-type'), bytes: res.headers.get('content-length') };
+      if (res.ok) {
+        const buf = Buffer.from(await res.arrayBuffer());
+        meta.actualBytes = buf.length;
+        meta.magic = buf.subarray(0, 4).toString('hex');
+        // A ZIP starts PK\x03\x04 (504b0304).
+        meta.isZip = meta.magic.startsWith('504b');
+        meta.head = meta.isZip ? null : buf.subarray(0, 400).toString('utf8').replace(/\s+/g, ' ');
+        if (meta.isZip) {
+          // List the entries without a zip library: central-directory filenames.
+          const text = buf.toString('latin1');
+          const names = [...text.matchAll(/PK\x01\x02[\s\S]{24}([\s\S]{2})[\s\S]{16}/g)].length;
+          meta.zipEntriesApprox = names;
+          const fileNames = [...text.matchAll(/PK\x03\x04[\s\S]{22}([\s\S]{2})[\s\S]{2}/g)].length;
+          meta.localHeaders = fileNames;
+        }
+      }
+      info.probes[c.id] = meta;
+    } catch (e) {
+      info.probes[c.id] = { error: String(e.message).slice(0, 200) };
+    }
+  }
+  report.censusBulkProbe = info;
+  return info;
+}
+
 // ------------------------------------------------------- mirrors / checks ---
 /**
  * Independent second source, used two ways: to CROSS-CHECK the primary feeds,
@@ -1007,6 +1062,7 @@ const [census, bls, fred, redfin, calendarEvents, mirrors, resale, zillow] = awa
   doCensus(), doBls(), doFred(), doRedfin(), doCalendar(), doMirrors(), doResale(), doZillow(),
 ]);
 await probeRedfinFreshness();
+await probeCensusBulk();
 
 // Validity check: primary vs independent second path.
 const checks = crossCheck({ census, bls }, mirrors || {});
