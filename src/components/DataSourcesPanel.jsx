@@ -126,10 +126,10 @@ export default function DataSourcesPanel({ census, bls, fred, redfin, resale, zi
             <tbody>
               <StatusRow
                 name="Census Bureau — Economic Indicators"
-                host="api.census.gov"
+                host="fred.stlouisfed.org (HOUST, PERMIT, MSACSR, …) · api.census.gov with a key"
                 measuredCors={corsOf('census')}
                 corsNote={noteOf('census')}
-                keyNeeded="A key is required for the API. The bulk files below need none."
+                keyNeeded="Optional. The releases are read keylessly via FRED; a key adds a second independent read."
                 state={census}
                 note={noteOf('census')}
               />

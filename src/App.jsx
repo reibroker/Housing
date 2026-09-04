@@ -179,7 +179,12 @@ export default function App() {
           <strong>Reading the published data snapshot</strong>
           Built {snapshotAge}. FRED and Redfin send no CORS headers, so a browser cannot read them directly — a
           scheduled job fetches every source server-side, hourly, and publishes the result here.
-          {mirrorNote && <> {mirrorNote}</>}
+          {mirrorNote && (
+            <>
+              {' '}
+              <span className="muted">{mirrorNote}</span>
+            </>
+          )}
         </div>
       )}
 

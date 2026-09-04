@@ -170,7 +170,15 @@ const CENSUS_SPEC = {
 async function doCensus() {
   const info = { ok: false, cors: null, datasets: {}, resolved: {}, unmatched: [], allCodes: {} };
   if (!CENSUS_KEY) {
-    info.error = 'CENSUS_API_KEY not set — Census rejects every unkeyed request.';
+    // Not an error condition. The same Census releases arrive through the FRED
+    // mirrors, keyless and current; a key would add an independent second read
+    // of them, not the data. Worded so the dashboard does not report a missing
+    // optional enhancement as a broken source.
+    info.apiKeyPresent = false;
+    info.note =
+      'Census API not called: no key configured. The same releases (New Residential ' +
+      'Construction, New Home Sales, Housing Vacancies) are read from FRED, which ' +
+      'redistributes them. A key would add an independent second read for cross-checking.';
     report.sources.census = info;
     return null;
   }
@@ -702,59 +710,26 @@ function computeFreshness(bundle) {
 }
 
 
-/**
- * Keyless Census: the same releases, as bulk files.
+/*
+ * KEYLESS CENSUS — investigated and ruled out, do not retry.
  *
- * The API needs a key, and obtaining one means registering an account, which is
- * not something to do on someone else's behalf. But the Census Bureau also
- * publishes every Economic Indicator time series as plain downloadable files
- * under /econ/currentdata/ — no key, no account, and robots.txt permits /econ/.
+ * The Census API requires a key. The Bureau also publishes bulk files under
+ * /econ/currentdata/datasets/ (RESCONST-mf.zip, RESSALES-mf.zip, HV-mf.zip) with
+ * no key, and robots.txt permits /econ/ — but their index shows those archives
+ * were last updated in JANUARY 2015. They are a decade stale and useless for a
+ * current-conditions dashboard. Every URL shape also returned HTTP 400.
  *
- * If these parse, the dashboard reads the PRIMARY Census release directly and
- * the API key stops being relevant at all. They would also settle the
- * long-standing unknown in src/data/census.js: the real category/data-type code
- * values, which the API does not expose through its metadata endpoints and which
- * the client currently guesses at.
+ * This turned out not to matter. FRED's HOUST, PERMIT, MSACSR, UNDCONTSA,
+ * COMPUTSA, HSN1F, RHVRUSQ156N and the rest ARE the Census releases,
+ * redistributed: FRED attributes each one to "U.S. Census Bureau and U.S.
+ * Department of Housing and Urban Development, New Residential Construction".
+ * Reading them is not a degraded fallback — it is the same published release
+ * arriving through a different distributor, keyless and current.
+ *
+ * A CENSUS_API_KEY therefore adds two things and neither is the data itself:
+ * a genuinely independent second read (which cross-checks our own EITS parser),
+ * and access to finer category breakdowns the dashboard does not currently chart.
  */
-const CENSUS_BULK_CANDIDATES = [
-  { id: 'resconst_zip', url: 'https://www.census.gov/econ/currentdata/datasets/RESCONST-mf.zip', binary: true },
-  { id: 'ressales_zip', url: 'https://www.census.gov/econ/currentdata/datasets/RESSALES-mf.zip', binary: true },
-  { id: 'hv_zip',       url: 'https://www.census.gov/econ/currentdata/datasets/HV-mf.zip', binary: true },
-  // The dbsearch endpoint that powers their own chart tool; returns CSV.
-  { id: 'dbsearch_csv', url: 'https://www.census.gov/econ/currentdata/export/csv?programCode=RESCONST&timeSlotType=12&startYear=2015&endYear=2026&categoryCode=APERMITS&dataTypeCode=TOTAL&geoLevelCode=US&adjusted=1&errorData=0&internal=false' },
-  { id: 'dbsearch_alt', url: 'https://www.census.gov/econ/currentdata/dbsearch?program=RESCONST&startYear=2015&endYear=2026&categories[]=APERMITS&dataType=TOTAL&geoLevel=US&adjusted=yes&submit=GET+DATA&format=csv' },
-];
-
-async function probeCensusBulk() {
-  const info = { robots: await robotsAllows('https://www.census.gov', '/econ/'), probes: {} };
-  for (const c of CENSUS_BULK_CANDIDATES) {
-    try {
-      const res = await fetch(c.url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(60_000) });
-      const meta = { status: res.status, type: res.headers.get('content-type'), bytes: res.headers.get('content-length') };
-      if (res.ok) {
-        const buf = Buffer.from(await res.arrayBuffer());
-        meta.actualBytes = buf.length;
-        meta.magic = buf.subarray(0, 4).toString('hex');
-        // A ZIP starts PK\x03\x04 (504b0304).
-        meta.isZip = meta.magic.startsWith('504b');
-        meta.head = meta.isZip ? null : buf.subarray(0, 400).toString('utf8').replace(/\s+/g, ' ');
-        if (meta.isZip) {
-          // List the entries without a zip library: central-directory filenames.
-          const text = buf.toString('latin1');
-          const names = [...text.matchAll(/PK\x01\x02[\s\S]{24}([\s\S]{2})[\s\S]{16}/g)].length;
-          meta.zipEntriesApprox = names;
-          const fileNames = [...text.matchAll(/PK\x03\x04[\s\S]{22}([\s\S]{2})[\s\S]{2}/g)].length;
-          meta.localHeaders = fileNames;
-        }
-      }
-      info.probes[c.id] = meta;
-    } catch (e) {
-      info.probes[c.id] = { error: String(e.message).slice(0, 200) };
-    }
-  }
-  report.censusBulkProbe = info;
-  return info;
-}
 
 // ------------------------------------------------------- mirrors / checks ---
 /**
@@ -1062,7 +1037,6 @@ const [census, bls, fred, redfin, calendarEvents, mirrors, resale, zillow] = awa
   doCensus(), doBls(), doFred(), doRedfin(), doCalendar(), doMirrors(), doResale(), doZillow(),
 ]);
 await probeRedfinFreshness();
-await probeCensusBulk();
 
 // Validity check: primary vs independent second path.
 const checks = crossCheck({ census, bls }, mirrors || {});
@@ -1151,11 +1125,14 @@ const manifest = {
           // the user still wants to know a Census key would upgrade these.
           error: shipped ? null : v.error || null,
           note: viaMirror
-            ? `${mirrored} series sourced from the FRED mirror because the primary source was unavailable` +
-              (v.error ? ` (${v.error})` : '') +
-              (k === 'census'
-                ? '. Add a CENSUS_API_KEY secret to read the primary and turn the mirror into a cross-check.'
-                : '. This is usually a transient upstream outage and resolves on the next run.')
+            ? k === 'census'
+              ? `${mirrored} Census series retrieved via FRED, which redistributes the Census Bureau's ` +
+                'New Residential Construction, New Home Sales and Housing Vacancies releases. Same published ' +
+                'figures, keyless. A CENSUS_API_KEY would add a second independent read for cross-checking, ' +
+                'not different data.'
+              : `${mirrored} series temporarily read from the FRED mirror` +
+                (v.error ? ` (${v.error})` : '') +
+                '. Usually a transient upstream outage; resolves on the next run.'
             : null,
           cors: v.cors ?? null,
         },

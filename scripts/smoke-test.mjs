@@ -542,6 +542,25 @@ check('snapshot mode does not claim Census codes failed to resolve',
   (await snapPage.locator('.badge.err', { hasText: 'no match' }).count()) === 0);
 const srcText = await snapPage.locator('.app').innerText();
 check('data sources tab lists Realtor.com and Zillow', /Realtor\.com/.test(srcText) && /Zillow Research/.test(srcText));
+
+// Regression: the CORS column was hardcoded prose that had drifted to the
+// OPPOSITE of the measured header for three of four hosts. It must be rendered
+// from the manifest, never asserted.
+{
+  // Fixture declares bls cors '*' and the rest null.
+  const rows = await snapPage.evaluate(() =>
+    [...document.querySelectorAll('table')]
+      .flatMap((t) => [...t.querySelectorAll('tbody tr')])
+      .map((tr) => [...tr.querySelectorAll('td')].map((td) => td.innerText.replace(/\s+/g, ' ')))
+      .filter((cells) => cells.length >= 3)
+  );
+  const blsRow = rows.find((c) => /Bureau of Labor Statistics/.test(c[0]));
+  const fredRow = rows.find((c) => /^FRED —/.test(c[0]));
+  check('CORS column reports BLS as readable, matching the measured "*"',
+    Boolean(blsRow) && /can read this host directly/i.test(blsRow[1]), blsRow?.[1]?.slice(0, 70));
+  check('CORS column reports FRED as not readable, matching the measured absence',
+    Boolean(fredRow) && /cannot read it directly/i.test(fredRow[1]), fredRow?.[1]?.slice(0, 70));
+}
 // Opening every table view on a phone used to push 159px of horizontal scroll
 // onto the page, because a `1fr` grid track sizes to the table's min-content.
 const phone = await browser.newPage({ viewport: { width: 390, height: 844 } });
